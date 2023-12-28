@@ -104,43 +104,42 @@ class NegativeMiner(object):
                 normalize_embeddings=normalize_embeddings,
             )
             score_mtrx = torch.matmul(qemb_batch, doc_embs.t())  # (qsize, dsize)
-            _, indices_topk = score_mtrx.topk(k=self.nneg, dim=-1)
+            _, indices_topk = score_mtrx.topk(k=self.nneg + 1, dim=-1)
             indices_topk = indices_topk.tolist()
             for qid, neg_dids in zip(qid_batch, indices_topk):
                   neg_dids = dids[neg_dids].tolist()
                   for pos_did in self.gen_qrels[qid]:
                       if pos_did in neg_dids:
                           neg_dids.remove(pos_did)
-                  result[qid] = neg_dids
+                  result[qid] = neg_dids[:self.nneg]
 
-            
-          # From this point on, we populated every query.
+
         if (self.query_augment_mod == QueryAugmentMod.UsePast):
-          # Load the query -> aug pair.
-          # Overwrite the result[qid] of aug with real query.
-          print("Using real queries as ground truths for augmented ones")
-          genq_mapping = parse_jsonl_file(os.path.join(self.generated_path, "gpl-aug.jsonl"))
-          new_result = {}
-          for qid,neg_dids in result.items():
-            if "aug" in qid:
-              # Get the real query from corresponding aug
-              real_query = genq_mapping[qid]
-              # The aug query has same results as real query
-              new_result[qid] = result[real_query]
-            else:
-              # If it is already result, just put neg_dids.
-              new_result[qid] = neg_dids
-          result = new_result
+            # Load the query -> aug pair.
+            # Overwrite the result[qid] of aug with real query.
+            print("Using real queries as ground truths for augmented ones")
+            genq_mapping = parse_jsonl_file(os.path.join(self.generated_path, "gpl-aug.jsonl"))
+            new_result = {}
+            for qid,neg_dids in result.items():
+              if "aug" in qid:
+                # Get the real query from corresponding aug
+                real_query = genq_mapping[qid]
+                # The aug query has same results as real query
+                new_result[qid] = result[real_query]
+              else:
+                # If it is already result, just put neg_dids.
+                new_result[qid] = neg_dids
+            result = new_result
         elif (self.query_augment_mod == QueryAugmentMod.None_):
-          new_result = {}
-          print("Not using augmented queries")
-          for qid,neg_dids in result.items():
-            if "aug" not in qid:
-              # If it is already result, just put neg_dids.
-              new_result[qid] = neg_dids
-          result = new_result 
+            print("Not using augmented queries")
+            new_result = {
+                qid: neg_dids
+                for qid, neg_dids in result.items()
+                if "aug" not in qid
+            }
+            result = new_result
         else:
-          print("Retriving results for the augmented queries")       
+            print("Retriving results for the augmented queries")       
 
 
         print("Retriving")

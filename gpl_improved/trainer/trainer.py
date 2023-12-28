@@ -5,13 +5,15 @@ import tqdm
 import logging
 from torch.optim import Adam
 import os 
-from gpl_improved.loss import MarginDistillationLoss
-from gpl_improved.hard_negative_dataset import HardNegativeDataset, hard_negative_collate_fn
+from .loss import MarginDistillationLoss
+from .hard_negative_dataset import HardNegativeDataset, hard_negative_collate_fn
 from gpl_improved.utils import load_sbert, batch_to_device
 from sentence_transformers.readers.InputExample import InputExample
 import torch
-from gpl_improved.RetriverWriter import EvaluateGPL, RetriverWriter
+from .RetriverWriter import EvaluateGPL, RetriverWriter
 from beir.datasets.data_loader import GenericDataLoader
+import matplotlib.pyplot as plt 
+import numpy as np 
 
 
 class PseudoLabeler(object):
@@ -25,7 +27,9 @@ class PseudoLabeler(object):
         cross_encoder,
         max_seq_length,
         gpl_score_function,
-        base_model
+        base_model,
+        eval_dir, 
+        eval_every = 1000,
     ):
         assert "hard-negatives.jsonl" in os.listdir(generated_path)
         fpath_hard_negatives = os.path.join(generated_path, "hard-negatives.jsonl")
@@ -51,6 +55,9 @@ class PseudoLabeler(object):
         self.device = torch.device("cuda")
         self.path = generated_path
         self.base_model = base_model
+        self.current_step = 0
+        self.eval_every = eval_every
+        self.eval_dir = eval_dir
         # self.optimizer_cross = Adam(self.cross_encoder.parameters())
     def retokenize(self, texts):
         ## We did this retokenization for two reasons:
@@ -66,12 +73,11 @@ class PseudoLabeler(object):
             return_tensors="pt",
             max_length=self.max_seq_length,
         )
-        decoded = self.retokenizer.batch_decode(
+        return self.retokenizer.batch_decode(
             features["input_ids"],
             skip_special_tokens=True,
             clean_up_tokenization_spaces=True,
         )
-        return decoded
     def tokenize(self, texts):
         """
         Tokenizes the texts
@@ -96,7 +102,7 @@ class PseudoLabeler(object):
     def train(self):
         number_of_data_points = len(self.hard_negative_dataloader.dataset)
         batch_size = self.hard_negative_dataloader.batch_size
-
+        loss_ = np.zeros((self.total_steps))
         if number_of_data_points < batch_size:
             raise ValueError(
                 "Batch size larger than number of data points / generated queries "
@@ -107,7 +113,7 @@ class PseudoLabeler(object):
 
         hard_negative_iterator = iter(self.hard_negative_dataloader)
         self.logger.info("Begin training")
-        for _ in tqdm.trange(self.total_steps):
+        for step in tqdm.trange(self.total_steps):
             try:
                 batch = next(hard_negative_iterator)
             except StopIteration:
@@ -134,13 +140,24 @@ class PseudoLabeler(object):
               loss.backward()
               self.optimizer_bi.step()
               self.optimizer_bi.zero_grad()
+              loss_[step] = loss.mean()
+            if self.current_step % self.eval_every == 0:
+                self.eval(self.eval_dir)
+            if self.current_step % 100 == 0:
+                self.plot_loss(loss_, self.current_step)
+            self.current_step += 1
         return self.bi_retriver
       
-    def eval(self):
+    def plot_loss(self, loss_arr, current_step):
+        plt.plot(loss_arr, np.arange(self.total_steps))
+        plt.savefig("loss.png")
+        
+        
+    def eval(self, out_dir):
       self.logger.info("Doing evaluation for GPL")
       corpus, queries, qrels = GenericDataLoader(self.path).load(split="test")
       retriver = EvaluateGPL(self.bi_retriver, queries, corpus)
-      writer = RetriverWriter(retriver = retriver, output_dir = os.path.join("/content/results", "fiqa", self.base_model + "_GPL", "test"))
+      writer = RetriverWriter(retriver = retriver, output_dir = os.path.join(out_dir, self.base_model + "_GPL", f"test_step_{self.current_step}"))
       writer.evaluate_query_based(qrels)
       writer.evaluate_beir_format(qrels)
 

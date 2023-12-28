@@ -12,7 +12,7 @@ def qgen(
     forward_model_path = "Helsinki-NLP/opus-mt-en-fr", 
     back_model_path = "Helsinki-NLP/opus-mt-fr-en",
     ques_per_passage=3,
-    bsz=4,
+    bsz=10,
     top_p = 0.95,
     top_k = 25,
     max_length = 64,
@@ -21,18 +21,18 @@ def qgen(
     augment_probability : float = 1.0,
     augment_per_query: int = 2,
     augment_temperature: float = 0.0,
+    logger: logging.Logger = None,
 ):
     #### Provide the data_path where nfcorpus has been downloaded and unzipped
     corpus = GenericDataLoader(data_path).load_corpus()
-    corpus = dict(random.sample(corpus.items(), 100))
-
+    logger.info(f"Starting to generate queries with mod : {augmented}")
     #### question-generation model loading
-    if type(augmented) != QueryAugmentMod.None_:
+    if augmented != QueryAugmentMod.None_:
       generator = QueryGenerator(model=QGenModel(generator_name_or_path), 
                                  augment_model = QAugmentModel(forward_model_path = forward_model_path, back_model_path = back_model_path),
       )
     else:
-      generator = QueryGenerator(model=QGenModel(generator_name_or_path))
+      generator = QueryGenerator(model=QGenModel(generator_name_or_path), augment_model=None)
  
     #### Query-Generation using Nucleus Sampling (top_k=25, top_p=0.95) ####
     #### https://huggingface.co/blog/how-to-generate
@@ -82,7 +82,7 @@ class QueryWriter:
                augment_temperature : float = 2.0):
     assert "corpus.jsonl" in os.listdir(self.path_to_data), "At least corpus should exist!"
 
-    if use_train_qrels == True:
+    if use_train_qrels:
       assert "qrels" in os.listdir(self.path_to_data) and "queries.jsonl" in os.listdir(self.path_to_data), "No queries found"
       self.logger.info("Loading from existing labeled data")
       corpus, gen_queries, gen_qrels = GenericDataLoader(
@@ -108,12 +108,13 @@ class QueryWriter:
           top_p = top_p,
           top_k = top_k,
           max_length = max_length,
-          augmented = QueryAugmentMod.UseNew,
+          augmented = augmented,
           augment_probability  = augment_probability,
           forward_model_path = "Helsinki-NLP/opus-mt-en-fr", 
           back_model_path = "Helsinki-NLP/opus-mt-fr-en",
           augment_per_query = augment_per_query,
-          augment_temperature = augment_temperature
+          augment_temperature = augment_temperature,
+          logger = self.logger,
 
       )
       # Returns the generated queries...

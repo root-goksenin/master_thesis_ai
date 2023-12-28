@@ -1,6 +1,5 @@
 import random
 import logging 
-import functools
 import os 
 import json
 import numpy as np 
@@ -36,9 +35,9 @@ class RetriverWriter:
       mrrs = []
       self.logger.info(f"Evaluating retrieved results")
       ndcg, _map, recall, precision = EvaluateRetrieval.evaluate(
-          query_corpus_relativity, self.retriver.results, self.k_values
+          query_corpus_relativity, self.retriver.results(), self.k_values
       )
-      mrr = EvaluateRetrieval.evaluate_custom(query_corpus_relativity, self.retriver.results, self.k_values, metric="mrr")
+      mrr = EvaluateRetrieval.evaluate_custom(query_corpus_relativity, self.retriver.results(), self.k_values, metric="mrr")
 
       ndcgs.append(ndcg)
       _maps.append(_map)
@@ -78,7 +77,7 @@ class RetriverWriter:
       recall_string = "recall." + ",".join([str(k) for k in self.k_values])
       precision_string = "P." + ",".join([str(k) for k in self.k_values])
       evaluator = pytrec_eval.RelevanceEvaluator(query_corpus_relativity, {map_string, ndcg_string, recall_string, precision_string})
-      scores = evaluator.evaluate(self.retriver.results)
+      scores = evaluator.evaluate(self.retriver.results())
       new_scores = {}
       for query in scores:
         new_scores[int(query) - 1 ] = {}
@@ -94,6 +93,7 @@ class RetriverWriter:
               indent=4,
           )
       self.logger.info(f"Saved evaluation results to {result_path}")
+
 
 
 class EvaluateGPL:
@@ -117,10 +117,27 @@ class EvaluateGPL:
 
     # To calculate ndcg at @K
     self.k_values = k_values
+    self.results_ = None
 
-  @functools.cached_property
-  def results(self):
-    self.logger.info(f" Initializing retirever model and retriving corpus, queries")
-    # First retrieve using retriever and get b
-    results_ = self.retriever.retrieve(self.corpus, self.query)
-    return results_
+  def evaluate(self, qrels, k_values):
+      ndcgs = []
+      mrrs = []
+      ndcg, _, _, _ = EvaluateRetrieval.evaluate(
+          qrels, self.results(), k_values
+      )
+      mrr = EvaluateRetrieval.evaluate_custom(qrels, self.results(), k_values, metric="mrr")
+
+      ndcgs.append(ndcg)
+      mrrs.append(mrr)
+      # We have a database scheme for each query has ndcg values at different cut-off points.
+      ndcg = {k: np.mean([score[k] for score in ndcgs]) for k in ndcg}
+      mrr = {k: np.mean([score[k] for score in mrrs]) for k in mrr}
+      return ndcg, mrr
+
+  def results(self,):
+        # First retrieve using retriever and get b
+      if  self.results_ is None:
+          self.logger.info(" Initializing retirever model and retriving corpus, queries")
+          results_ = self.retriever.retrieve(self.corpus, self.query)
+          self.results_ = results_
+      return self.results_
