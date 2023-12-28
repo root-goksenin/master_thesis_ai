@@ -95,7 +95,6 @@ class RetriverWriter:
       self.logger.info(f"Saved evaluation results to {result_path}")
 
 
-
 class EvaluateGPL:
   def __init__(self, model, query, corpus, k_values: List[int] = [1, 3, 5, 10, 20, 100], score_function: SCORE = SCORE.DOT) :
     # Model to be Evaluated. This is gonna be transformed into self.qmodel and self.dmodel from sentence bert
@@ -132,11 +131,11 @@ class EvaluateGPL:
       # We have a database scheme for each query has ndcg values at different cut-off points.
       ndcg = {k: np.mean([score[k] for score in ndcgs]) for k in ndcg}
       mrr = {k: np.mean([score[k] for score in mrrs]) for k in mrr}
-      return ndcg, mrr
-
-  def results(self,):
+      return ndcg, mrr  
+    
+  def results(self):
         # First retrieve using retriever and get b
-      if  self.results_ is None:
+      if self.results_ is None:
           self.logger.info(" Initializing retirever model and retriving corpus, queries")
           results_ = self.retriever.retrieve(self.corpus, self.query)
           self.results_ = results_
