@@ -62,13 +62,13 @@ class GPLDistill(pl.LightningModule):
         # training_step defines the train loop.
         # it is independent of forward
         
-        # if self.global_step % self.eval_every == 0:
-        #   self.bi_retriver.eval()
-        #   ndcgs, mrrs = self.ndcg_dev(k_values = [10,])
-        #   self.log("ndcg@10", ndcgs["NDCG@10"])
-        #   self.log("mrr@10", mrrs["MRR@10"])
-        #   self.bi_retriver.train()
-        #   self.bi_retriver.zero_grad()
+        if self.global_step % self.eval_every == 0:
+          self.bi_retriver.eval()
+          ndcgs, mrrs = self.ndcg_dev(k_values = [10,])
+          self.log("ndcg@10", ndcgs["NDCG@10"])
+          self.log("mrr@10", mrrs["MRR@10"])
+          self.bi_retriver.train()
+          self.bi_retriver.zero_grad()
         skip_scheduler = False
         bi_optimizer, cross_optimizer, = self.optimizers()
         bi_scheduler, cross_scheduler = self.lr_schedulers()
@@ -114,8 +114,7 @@ class GPLDistill(pl.LightningModule):
             bi_scheduler.step()
             cross_scheduler.step()
         my_lr = bi_scheduler.get_lr()
-        self.log("learning_rate", my_lr)
-        print(my_lr)
+        self.log("learning_rate", my_lr[0])
 
 
     def configure_optimizers(self):

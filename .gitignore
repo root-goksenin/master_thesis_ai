@@ -168,3 +168,6 @@ output/*
 *.zip
 gpl_venv/*
 *.json
+tb_logs/*
+*.jsonl
+*.tsv
