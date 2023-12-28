@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu
+#SBATCH --gpus=1
+#SBATCH --job-name=CheckGPL
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=18
+#SBATCH --time=04:00:00
+#SBATCH --output=slurm_output_%A.out
+
+
+module load 2022
+module load Anaconda3/2022.05 
+source activate gpl_env_1
+pip install matplotlib
+cd $HOME/master_thesis_ai
+
+srun python main.py

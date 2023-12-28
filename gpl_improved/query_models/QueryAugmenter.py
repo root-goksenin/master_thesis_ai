@@ -1,8 +1,6 @@
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-from tqdm.autonotebook import trange
-import torch, logging, math, queue
-import torch.multiprocessing as mp
-from typing import List, Dict
+import torch, logging
+from typing import List, Union
 import numpy as np
 from gpl_improved.query_models import generate
 
@@ -20,7 +18,7 @@ class QAugmentModel:
         self.forward_model = self.forward_model.to(self.device)
         self.back_model = self.back_model.to(self.device)
 
-    def augment(self, queries: List[str],  augment_per_query: int, top_k: int, max_length: int, top_p: float = None, temperature: float = None, probability : float = 1) -> List[str] | None:
+    def augment(self, queries: List[str],  augment_per_query: int, top_k: int, max_length: int, top_p: float = None, temperature: float = None, probability : float = 1) -> Union[List[str], None]:
 
         # Augmentation probability.
         probabilities = np.random.uniform(0,1, (len(queries)))

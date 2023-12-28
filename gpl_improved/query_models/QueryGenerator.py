@@ -63,7 +63,7 @@ class QueryGenerator:
         self.logger.info("Params: batch size = {}".format(batch_size))
         self.logger.info("Params: augment probability  = {}".format(augment_probability))
         self.logger.info("Params: augment per query  = {}".format(augment_per_query))
-
+        self.logger.info("Params: augment temperature  = {}".format(augment_temperature))
         
         count = 0
         count_aug = 0
@@ -82,21 +82,23 @@ class QueryGenerator:
             
             assert len(queries) == size * ques_per_passage
             # For each query create augment_per_query augmented queries
-            augmented = self.augment_model.augment(queries, 
-              augment_per_query = augment_per_query, 
-              top_p = top_p, 
-              top_k = max_length, 
-              max_length = max_length,
-              temperature = augment_temperature)
-            assert len(augmented) == size * ques_per_passage * augment_per_query
             
-            augmented_query = {}
-            start = 0
-            for id in range(len(queries)):
-               key_query = queries[id].strip()
-               augmented_query[key_query] = augmented[start : start + augment_per_query]
-               start += augment_per_query
-              
+            if self.augment_model:
+                augmented = self.augment_model.augment(queries, 
+                augment_per_query = augment_per_query, 
+                top_p = top_p, 
+                top_k = max_length, 
+                max_length = max_length,
+                temperature = augment_temperature)
+                assert len(augmented) == size * ques_per_passage * augment_per_query
+                
+                augmented_query = {}
+                start = 0
+                for id in range(len(queries)):
+                    key_query = queries[id].strip()
+                    augmented_query[key_query] = augmented[start : start + augment_per_query]
+                    start += augment_per_query
+                
             for idx in range(size):      
                 # Saving generated questions after every "save_after" corpus ids
                 if (len(self.queries) % save_after == 0 and len(self.queries) >= save_after):
@@ -117,12 +119,13 @@ class QueryGenerator:
                     self.queries[query_id] = query
                     self.qrels[query_id] = {corpus_id: 1}
                     # Save each augmented query as related to this corpus, and map augmented query to query
-                    for i in range(augment_per_query):
-                      count_aug += 1
-                      augmented_query_id = "augQ" + str(count_aug)
-                      self.queries[augmented_query_id] = augmented_query[query][i]
-                      self.qrels[augmented_query_id] = {corpus_id: 1}
-                      self.aug_to_q[augmented_query_id] = query_id
+                    if self.augment_model:
+                        for i in range(augment_per_query):
+                            count_aug += 1
+                            augmented_query_id = "augQ" + str(count_aug)
+                            self.queries[augmented_query_id] = augmented_query[query][i]
+                            self.qrels[augmented_query_id] = {corpus_id: 1}
+                            self.aug_to_q[augmented_query_id] = query_id
                     
 
         

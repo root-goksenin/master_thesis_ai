@@ -1,6 +1,5 @@
 import random
 import logging 
-import functools
 import os 
 import json
 import numpy as np 
@@ -36,9 +35,9 @@ class RetriverWriter:
       mrrs = []
       self.logger.info(f"Evaluating retrieved results")
       ndcg, _map, recall, precision = EvaluateRetrieval.evaluate(
-          query_corpus_relativity, self.retriver.results, self.k_values
+          query_corpus_relativity, self.retriver.results(), self.k_values
       )
-      mrr = EvaluateRetrieval.evaluate_custom(query_corpus_relativity, self.retriver.results, self.k_values, metric="mrr")
+      mrr = EvaluateRetrieval.evaluate_custom(query_corpus_relativity, self.retriver.results(), self.k_values, metric="mrr")
 
       ndcgs.append(ndcg)
       _maps.append(_map)
@@ -78,7 +77,7 @@ class RetriverWriter:
       recall_string = "recall." + ",".join([str(k) for k in self.k_values])
       precision_string = "P." + ",".join([str(k) for k in self.k_values])
       evaluator = pytrec_eval.RelevanceEvaluator(query_corpus_relativity, {map_string, ndcg_string, recall_string, precision_string})
-      scores = evaluator.evaluate(self.retriver.results)
+      scores = evaluator.evaluate(self.retriver.results())
       new_scores = {}
       for query in scores:
         new_scores[int(query) - 1 ] = {}
@@ -117,10 +116,12 @@ class EvaluateGPL:
 
     # To calculate ndcg at @K
     self.k_values = k_values
+    self.results_ = None
 
-  @functools.cached_property
   def results(self):
-    self.logger.info(f" Initializing retirever model and retriving corpus, queries")
-    # First retrieve using retriever and get b
-    results_ = self.retriever.retrieve(self.corpus, self.query)
-    return results_
+        # First retrieve using retriever and get b
+      if not self.results_:
+          self.logger.info(" Initializing retirever model and retriving corpus, queries")
+          results_ = self.retriever.retrieve(self.corpus, self.query)
+          self.results_ = results_
+      return self.results_
