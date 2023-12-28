@@ -118,9 +118,24 @@ class EvaluateGPL:
     self.k_values = k_values
     self.results_ = None
 
+  def evaluate(self, qrels, k_values):
+      ndcgs = []
+      mrrs = []
+      ndcg, _, _, _ = EvaluateRetrieval.evaluate(
+          qrels, self.results(), k_values
+      )
+      mrr = EvaluateRetrieval.evaluate_custom(qrels, self.results(), k_values, metric="mrr")
+
+      ndcgs.append(ndcg)
+      mrrs.append(mrr)
+      # We have a database scheme for each query has ndcg values at different cut-off points.
+      ndcg = {k: np.mean([score[k] for score in ndcgs]) for k in ndcg}
+      mrr = {k: np.mean([score[k] for score in mrrs]) for k in mrr}
+      return ndcg, mrr  
+    
   def results(self):
         # First retrieve using retriever and get b
-      if not self.results_:
+      if self.results_ is None:
           self.logger.info(" Initializing retirever model and retriving corpus, queries")
           results_ = self.retriever.retrieve(self.corpus, self.query)
           self.results_ = results_

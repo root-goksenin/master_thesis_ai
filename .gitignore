@@ -163,7 +163,6 @@ cython_debug/
 slurm_output*
 *.packaging
 generated/*
-generated_improved/*
 output/*
 *.png
 *.zip
