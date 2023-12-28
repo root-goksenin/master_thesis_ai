@@ -163,9 +163,11 @@ cython_debug/
 slurm_output*
 *.packaging
 generated/*
-generated_improved/*
 output/*
 *.png
 *.zip
 gpl_venv/*
 *.json
+tb_logs/*
+*.jsonl
+*.tsv
