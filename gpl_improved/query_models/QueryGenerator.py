@@ -8,7 +8,7 @@ from gpl_improved.query_models import QAugmentModel
 
 
 class QueryGenerator:
-    def __init__(self, model, augment_model: QAugmentModel, **kwargs):
+    def __init__(self, model, augment_model: QAugmentModel):
         self.model = model
         self.augment_model = augment_model
         self.qrels = {}
@@ -17,10 +17,8 @@ class QueryGenerator:
         self.aug_to_q = {}
         self.logger = logging.getLogger(__name__ + ".QueryGenerator")
 
-
     @staticmethod
     def save(output_dir: str, queries: Dict[str, str], qrels: Dict[str, Dict[str, int]], prefix: str):
-        
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(os.path.join(output_dir, prefix + "-qrels"), exist_ok=True)
         
@@ -59,6 +57,8 @@ class QueryGenerator:
         self.logger.info("Params: top_p = {}".format(top_p))
         self.logger.info("Params: top_k = {}".format(top_k))
         self.logger.info("Params: max_length = {}".format(max_length))
+        self.logger.info("Params: temperature  = {}".format(1))
+
         self.logger.info("Params: ques_per_passage = {}".format(ques_per_passage))
         self.logger.info("Params: batch size = {}".format(batch_size))
         self.logger.info("Params: augment probability  = {}".format(augment_probability))
@@ -77,7 +77,8 @@ class QueryGenerator:
                 ques_per_passage=ques_per_passage,
                 max_length=max_length,
                 top_p=top_p,
-                top_k=top_k
+                top_k=top_k,
+                temperature=1,
                 )
             
             assert len(queries) == size * ques_per_passage
@@ -118,7 +119,8 @@ class QueryGenerator:
                     query_id = "genQ" + str(count)
                     self.queries[query_id] = query
                     self.qrels[query_id] = {corpus_id: 1}
-                    # Save each augmented query as related to this corpus, and map augmented query to query
+                    # Save each augmented query as related to this corpus, 
+                    # and map augmented query to query
                     if self.augment_model:
                         for i in range(augment_per_query):
                             count_aug += 1
@@ -126,9 +128,7 @@ class QueryGenerator:
                             self.queries[augmented_query_id] = augmented_query[query][i]
                             self.qrels[augmented_query_id] = {corpus_id: 1}
                             self.aug_to_q[augmented_query_id] = query_id
-                    
-
-        
+                            
         # Saving finally all the questions
         self.logger.info("Saving {} Generated Queries...".format(len(self.queries)))
         self.save(output_dir, self.queries, self.qrels, prefix)
