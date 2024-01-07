@@ -75,7 +75,7 @@ def train(path : str,
     checkpoint_callback = ModelCheckpoint(monitor='ndcg_train',
                                           dirpath=f'./saved_models/gpl_improved/{name}',
                                           mode='max',
-                                          filename = '{step}-{ndcg}',
+                                          filename = '{step}-{ndcg:.3f}',
                                           verbose = True,
                                           save_on_train_epoch_end = True)
     trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, deterministic = True, callbacks = [checkpoint_callback])
