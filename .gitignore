@@ -171,3 +171,4 @@ gpl_venv/*
 tb_logs/*
 *.jsonl
 *.tsv
+outputs/*
