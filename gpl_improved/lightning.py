@@ -27,6 +27,17 @@ class GPLDistill(pl.LightningModule):
                  eval_every = 1000,  batch_size: int = 32, warmup_steps = 1000, t_total = 140000, amp_training = True,
                  evaluate_baseline = True, max_seq_length = 350):
         super().__init__()
+        self.logger_ = logging.getLogger(".GPLDistill" + __name__)
+        self.logger_.info(f"Evaluating the model every {eval_every} step")
+        self.logger_.info(f"Using Cross Encoders {cross_encoder}")
+        self.logger_.info(f"Adapting bi_retriver {bi_retriver}")
+        self.logger_.info(f"Using batch size {batch_size}")
+        self.logger_.info(f"Warming up the LR scheduler with {warmup_steps} step")
+        self.logger_.info(f"Training the model total of {t_total} steps")
+        self.logger_.info(f"Using AMP training {amp_training}")
+        self.logger_.info(f"Evaluate Baseline {evaluate_baseline}")
+        self.logger_.info(f"Using maximum sequence length of {max_seq_length}")
+
         self.warmup_steps = warmup_steps
         self.t_total = t_total
         self.base_model = bi_retriver
@@ -44,7 +55,7 @@ class GPLDistill(pl.LightningModule):
         self.use_amp = amp_training
         self.automatic_optimization = False
         self.evaluate_baseline = evaluate_baseline
-
+        self.logger_.info(f"Gradient clipping of norm {self.max_grad_norm}")
         if self.use_amp:
             print("Using amp training")
             self.scaler = torch.cuda.amp.GradScaler()
@@ -55,22 +66,13 @@ class GPLDistill(pl.LightningModule):
         # self.cross_encoder.zero_grad()
         # self.cross_encoder.train()
     def setup(self,stage):
-        """
-        Setup the training for GPL models. 
-        If we evaluate the baseline, run full evaluation on the BEIR dataset with the bi-retriver model we have.
-        This loads the dev data of the specified BEIR path to get ndcg@10 and mrr@10 values during training
-        """
-        corpus, queries, qrels = GenericDataLoader(self.path).load(split="dev")
-        self.dev_queries = queries
-        self.dev_corpus = corpus 
-        self.dev_qrels = qrels
         if self.evaluate_baseline:
             self.eval_test()
+        
     def on_train_end(self):
         '''
-        When training finishes, evaluate development and test sets.
+        When training finishes, evaluate test set.
         '''
-        self.eval_dev()
         self.eval_test()
         
     def training_step(self, batch, batch_idx):
@@ -80,8 +82,8 @@ class GPLDistill(pl.LightningModule):
         # Evaluate the ndcg and mrr every x step.
         if (self.global_step + 1) % self.eval_every == 0:
           ndcgs, mrrs = self.ndcg_dev(k_values = [10,])
-          self.log("ndcg@10", ndcgs["NDCG@10"])
-          self.log("mrr@10", mrrs["MRR@10"])
+          self.log("ndcg", ndcgs["NDCG@10"])
+          self.log("mrr", mrrs["MRR@10"])
 
         skip_scheduler = False
         bi_optimizer, cross_optimizer, = self.optimizers()
@@ -140,7 +142,9 @@ class GPLDistill(pl.LightningModule):
         optimizer_cross = AdamW(self.cross_encoder.model.parameters(), lr=2e-5, weight_decay = 0.01)
         scheduler_bi = transformers.get_linear_schedule_with_warmup(optimizer_bi, num_warmup_steps=self.warmup_steps, num_training_steps=self.t_total)
         scheduler_cross = transformers.get_linear_schedule_with_warmup(optimizer_cross, num_warmup_steps=self.warmup_steps, num_training_steps=self.t_total)
-
+        
+        self.logger_.info("Using AdamW optimizer for bi retriver with weight decay of 0.01, and learning rate of 2e-5")
+        self.logger_.info("Using AdamW optimizer for cross encoder with weight decay of 0.01, and learning rate of 2e-5")
         return [optimizer_bi, optimizer_cross], [scheduler_bi, scheduler_cross]
     
     
@@ -154,19 +158,6 @@ class GPLDistill(pl.LightningModule):
         )
         hard_negative_dataloader.collate_fn = hard_negative_collate_fn
         return hard_negative_dataloader
-
-    def ndcg_dev(self, k_values: List[int] = None):
-        if k_values is None:
-            k_values = [10]
-        
-        retriver = EvaluateGPL(self.bi_retriver, self.dev_queries, self.dev_corpus)
-        return retriver.evaluate(self.dev_qrels, k_values = k_values)
-      
-    def eval_dev(self):
-        self.bi_retriver.eval()
-        self._evaluate("dev", '_GPL_dev')
-        self.bi_retriver.train()
-        self.bi_retriver.zero_grad()
 
     def eval_test(self):
         self.bi_retriver.eval()        

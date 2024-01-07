@@ -15,6 +15,7 @@ import torch, gc
 from typing import List
 import hydra
 from omegaconf import DictConfig
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 def dataset(dataset_name: BEIR_DATASETS,
          output_folder: str):
@@ -66,11 +67,18 @@ def train(path : str,
              amp_training : bool,
              evaluate_baseline: bool,
              max_seq_length: int,
-             seed: int
+             seed: int,
+             name: str
              ):
-    logger = TensorBoardLogger("tb_logs", name="gpl_model_try")
+    logger = TensorBoardLogger("tb_logs", name=name)
     # 140,000 steps for every BEIR dataset.
-    trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, deterministic = True )
+    checkpoint_callback = ModelCheckpoint(monitor='ndcg',
+                                          dirpath=f'./saved_models/gpl_improved/{name}',
+                                          mode='max',
+                                          filename = '{step}-{ndcg}',
+                                          verbose = True,
+                                          save_on_train_epoch_end = True)
+    trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, deterministic = True, callbacks = [checkpoint_callback])
     seed_everything(seed, workers=True)
     # Train the distillation
     # Batch size is 32.    
@@ -92,39 +100,77 @@ def train(path : str,
 def main(cfg: DictConfig) -> None:
     print(cfg)
     path = dataset(dataset_name=BEIR_DATASETS(cfg.data.dataset_name), output_folder=cfg.data.output_folder)
-    
-    query_writer(path = path, 
-                 queries_per_passage = cfg.query_writer.queries_per_passage, 
-                 batch_size = cfg.query_writer.batch_size,
-                 augmented=cfg.query_writer.augmented, 
-                 use_train_qrels=cfg.query_writer.use_train_qrels, 
-                 top_p = cfg.query_writer.top_p , 
-                 top_k = cfg.query_writer.top_k, 
-                 max_length = cfg.query_writer.max_length,
-                 augment_probability = cfg.query_writer.augment_probability, 
-                 forward_model_path = cfg.query_writer.forward_model_path, 
-                 back_model_path = cfg.query_writer.back_model_path, 
-                 augment_per_query = cfg.query_writer.augment_per_query, 
-                 augment_temperature = cfg.query_writer.augment_temperature)
+    if cfg.data.dataset_name == "cqadupstack":
+        for new_path in os.listdir(path):
+            new_path = os.path.join(path,new_path)
+            print(f"GPL for {new_path}")
+            query_writer(path = new_path, 
+                        queries_per_passage = cfg.query_writer.queries_per_passage, 
+                        batch_size = cfg.query_writer.batch_size,
+                        augmented=cfg.query_writer.augmented, 
+                        use_train_qrels=cfg.query_writer.use_train_qrels, 
+                        top_p = cfg.query_writer.top_p , 
+                        top_k = cfg.query_writer.top_k, 
+                        max_length = cfg.query_writer.max_length,
+                        augment_probability = cfg.query_writer.augment_probability, 
+                        forward_model_path = cfg.query_writer.forward_model_path, 
+                        back_model_path = cfg.query_writer.back_model_path, 
+                        augment_per_query = cfg.query_writer.augment_per_query, 
+                        augment_temperature = cfg.query_writer.augment_temperature)
 
-    hard_negative_miner(path = path,
-                        negatives_per_query= cfg.hard_negative_miner.negatives_per_query, 
-                        query_augment_mod=cfg.hard_negative_miner.query_augment_mod, 
-                        models=cfg.hard_negative_miner.models, 
-                        score=[SCORE(score) for score in cfg.hard_negative_miner.score],
-                        use_train_qrels=cfg.hard_negative_miner.use_train_qrels)
-    
-    train(path = path, 
-            cross_encoders = cfg.trainer.cross_encoders, 
-            bi_retriver = cfg.trainer.bi_retriver, 
-            t_total = cfg.trainer.t_total, 
-            eval_every = cfg.trainer.eval_every, 
-            batch_size = cfg.trainer.batch_size, 
-            warmup_steps = cfg.trainer.warmup_steps, 
-            amp_training = cfg.trainer.amp_training,
-            evaluate_baseline = cfg.trainer.evaluate_baseline, 
-            max_seq_length = cfg.trainer.max_seq_length, 
-            seed = cfg.trainer.seed)
+            hard_negative_miner(path = new_path,
+                                negatives_per_query= cfg.hard_negative_miner.negatives_per_query, 
+                                query_augment_mod=cfg.hard_negative_miner.query_augment_mod, 
+                                models=cfg.hard_negative_miner.models, 
+                                score=[SCORE(score) for score in cfg.hard_negative_miner.score],
+                                use_train_qrels=cfg.hard_negative_miner.use_train_qrels)
+            
+            train(path = new_path, 
+                    cross_encoders = cfg.trainer.cross_encoders, 
+                    bi_retriver = cfg.trainer.bi_retriver, 
+                    t_total = cfg.trainer.t_total, 
+                    eval_every = cfg.trainer.eval_every, 
+                    batch_size = cfg.trainer.batch_size, 
+                    warmup_steps = cfg.trainer.warmup_steps, 
+                    amp_training = cfg.trainer.amp_training,
+                    evaluate_baseline = cfg.trainer.evaluate_baseline, 
+                    max_seq_length = cfg.trainer.max_seq_length, 
+                    seed = cfg.trainer.seed,
+                    name = cfg.trainer.name + f"_{new_path}") 
+    else:
+        query_writer(path = path, 
+                    queries_per_passage = cfg.query_writer.queries_per_passage, 
+                    batch_size = cfg.query_writer.batch_size,
+                    augmented=cfg.query_writer.augmented, 
+                    use_train_qrels=cfg.query_writer.use_train_qrels, 
+                    top_p = cfg.query_writer.top_p , 
+                    top_k = cfg.query_writer.top_k, 
+                    max_length = cfg.query_writer.max_length,
+                    augment_probability = cfg.query_writer.augment_probability, 
+                    forward_model_path = cfg.query_writer.forward_model_path, 
+                    back_model_path = cfg.query_writer.back_model_path, 
+                    augment_per_query = cfg.query_writer.augment_per_query, 
+                    augment_temperature = cfg.query_writer.augment_temperature)
+
+        hard_negative_miner(path = path,
+                            negatives_per_query= cfg.hard_negative_miner.negatives_per_query, 
+                            query_augment_mod=cfg.hard_negative_miner.query_augment_mod, 
+                            models=cfg.hard_negative_miner.models, 
+                            score=[SCORE(score) for score in cfg.hard_negative_miner.score],
+                            use_train_qrels=cfg.hard_negative_miner.use_train_qrels)
+        
+        train(path = path, 
+                cross_encoders = cfg.trainer.cross_encoders, 
+                bi_retriver = cfg.trainer.bi_retriver, 
+                t_total = cfg.trainer.t_total, 
+                eval_every = cfg.trainer.eval_every, 
+                batch_size = cfg.trainer.batch_size, 
+                warmup_steps = cfg.trainer.warmup_steps, 
+                amp_training = cfg.trainer.amp_training,
+                evaluate_baseline = cfg.trainer.evaluate_baseline, 
+                max_seq_length = cfg.trainer.max_seq_length, 
+                seed = cfg.trainer.seed,
+                name = cfg.trainer.name)
     
 if __name__ == "__main__":
     gc.collect()
