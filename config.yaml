@@ -1,10 +1,10 @@
 data:
-  dataset_name: fiqa
+  dataset_name: scifact
   output_folder: ./generated_improved
 
 query_writer:
-  queries_per_passage: 5
-  batch_size: 128
+  queries_per_passage: -1
+  batch_size: 64
   augmented: QueryAugmentMod.None_
   use_train_qrels: False
   top_p: 0.95
@@ -34,3 +34,4 @@ trainer:
   evaluate_baseline: False
   max_seq_length: 350
   seed: 1
+  name: scifact
