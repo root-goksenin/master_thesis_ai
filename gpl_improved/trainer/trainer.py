@@ -32,8 +32,11 @@ class PseudoLabeler(object):
         eval_every = 1000,
     ):
         assert "hard-negatives.jsonl" in os.listdir(generated_path)
-        fpath_hard_negatives = os.path.join(generated_path, "hard-negatives.jsonl")
+        self.logger = logging.getLogger(__name__ + ".PseudoLabeler")
+        self.logger.info(f"Loading cross-encoder model {cross_encoder}")
         self.cross_encoder = CrossEncoder(cross_encoder)
+
+        fpath_hard_negatives = os.path.join(generated_path, "hard-negatives.jsonl")
         hard_negative_dataset = HardNegativeDataset(
             fpath_hard_negatives, gen_queries, corpus
         )
@@ -45,9 +48,8 @@ class PseudoLabeler(object):
         self.total_steps = total_steps
 
         #### retokenization
-        self.retokenizer = AutoTokenizer.from_pretrained(cross_encoder)
+        self.retokenizer = AutoTokenizer.from_pretrained(cross_encoder, force_download = True)
         self.max_seq_length = max_seq_length
-        self.logger = logging.getLogger(__name__ + ".PseudoLabeler")
 
         self.bi_retriver = load_sbert(base_model, pooling = None, max_seq_length = 350).cuda()
         self.loss = MarginDistillationLoss(model=self.bi_retriver, similarity_fct=gpl_score_function.value).cuda()

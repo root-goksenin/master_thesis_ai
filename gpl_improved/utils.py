@@ -129,4 +129,5 @@ def load_sbert(model_name_or_path, pooling=None, max_seq_length=None):
         )  # Set the maximum-sequence length
         logger.info(f"Set max_seq_length={max_seq_length}")
 
+    logger.info("Finished loading the sentence transformer model")
     return model

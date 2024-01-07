@@ -32,9 +32,9 @@ class GPLDistill(pl.LightningModule):
         self.base_model = bi_retriver
         self.max_seq_length = max_seq_length
         self.bi_retriver = load_sbert(bi_retriver, pooling = None, max_seq_length = self.max_seq_length)
-        self.cross_encoder = CrossEncoder(cross_encoder)
+        self.cross_encoder = CrossEncoder(cross_encoder[0])
         self.cross_encoder_model = self.cross_encoder.model
-        self.retokenizers = AutoTokenizer.from_pretrained(cross_encoder)
+        self.retokenizers = AutoTokenizer.from_pretrained(cross_encoder[0])
         self.loss = MarginDistillationLoss(model=self.bi_retriver, similarity_fct="dot")
         # This is going to be KL Divergence Loss!
         self.eval_every = eval_every

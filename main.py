@@ -56,7 +56,7 @@ def hard_negative_miner(path:str,
     miner = HardNegativeWriter(negatives_per_query=negatives_per_query, path_to_data= path, gpl_data_prefix="imp_gpl", query_augment_mod= query_augment_mod)
     miner.generate(models = models, score = score, use_train_qrels = use_train_qrels)
     
-def trainer(path : str,
+def train(path : str,
              cross_encoders: List[str],
              bi_retriver: str,
              t_total: int,
@@ -71,11 +71,11 @@ def trainer(path : str,
     logger = TensorBoardLogger("tb_logs", name="gpl_model_try")
     # 140,000 steps for every BEIR dataset.
     trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, deterministic = True )
-    # We can have multiple cross-encoders to distill the knowledge from.
     seed_everything(seed, workers=True)
     # Train the distillation
-    # Batch size is 32.
-    distill = GPLDistill(cross_encoder= cross_encoders[0],
+    # Batch size is 32.    
+    ## We can have multiple cross-encoders to distill the knowledge from.
+    distill = GPLDistill(cross_encoder= cross_encoders,
                          bi_retriver = bi_retriver, 
                          path = path,
                          amp_training = amp_training, 
@@ -114,8 +114,8 @@ def main(cfg: DictConfig) -> None:
                         score=[SCORE(score) for score in cfg.hard_negative_miner.score],
                         use_train_qrels=cfg.hard_negative_miner.use_train_qrels)
     
-    trainer(path = path, 
-            cross_encoders = cfg.trainer.cross_encoders[0], 
+    train(path = path, 
+            cross_encoders = cfg.trainer.cross_encoders, 
             bi_retriver = cfg.trainer.bi_retriver, 
             t_total = cfg.trainer.t_total, 
             eval_every = cfg.trainer.eval_every, 
@@ -126,8 +126,9 @@ def main(cfg: DictConfig) -> None:
             max_seq_length = cfg.trainer.max_seq_length, 
             seed = cfg.trainer.seed)
     
+if __name__ == "__main__":
     gc.collect()
     torch.cuda.empty_cache()
-    
-if __name__ == "__main__":
     main()
+    gc.collect()
+    torch.cuda.empty_cache()
