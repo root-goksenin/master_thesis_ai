@@ -58,9 +58,9 @@ class QueryGenerator:
         self.logger.info("Params: top_k = {}".format(top_k))
         self.logger.info("Params: max_length = {}".format(max_length))
         self.logger.info("Params: temperature  = {}".format(1))
-
         self.logger.info("Params: ques_per_passage = {}".format(ques_per_passage))
         self.logger.info("Params: batch size = {}".format(batch_size))
+        self.logger.info("Params: query_augment_model = {}".format(self.augment_model))
         self.logger.info("Params: augment probability  = {}".format(augment_probability))
         self.logger.info("Params: augment per query  = {}".format(augment_per_query))
         self.logger.info("Params: augment temperature  = {}".format(augment_temperature))
