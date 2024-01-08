@@ -4,8 +4,8 @@ data:
 
 query_writer:
   queries_per_passage: -1
-  batch_size: 64
-  augmented: QueryAugmentMod.None_
+  batch_size: 8
+  augmented: None
   use_train_qrels: False
   top_p: 0.95
   top_k: 25
@@ -18,7 +18,7 @@ query_writer:
 
 hard_negative_miner:
   negatives_per_query: 50
-  query_augment_mod: QueryAugmentMod.None_
+  query_augment_mod: None
   models: ["msmarco-distilbert-base-v3", "msmarco-MiniLM-L-6-v3"]
   score: [cos_sim, cos_sim]
   use_train_qrels: False
@@ -34,4 +34,4 @@ trainer:
   evaluate_baseline: False
   max_seq_length: 350
   seed: 1
-  name: scifact
+  name: scifact_no_aug

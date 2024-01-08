@@ -172,3 +172,4 @@ tb_logs/*
 *.jsonl
 *.tsv
 outputs/*
+*.ckpt

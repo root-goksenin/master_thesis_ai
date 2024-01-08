@@ -19,13 +19,13 @@ import numpy as np
 import pytorch_lightning as pl
 from torch.optim import Adam
 from torch.cuda.amp import autocast
-
+from gpl_improved.query_models import QueryAugmentMod
 # define the LightningModule
 
 class GPLDistill(pl.LightningModule):
     def __init__(self, cross_encoder, bi_retriver, path, 
                  eval_every = 1000,  batch_size: int = 32, warmup_steps = 1000, t_total = 140000, amp_training = True,
-                 evaluate_baseline = True, max_seq_length = 350):
+                 evaluate_baseline = True, max_seq_length = 350, query_per_passage = 3, augmented_mod = QueryAugmentMod.None_):
         super().__init__()
         self.logger_ = logging.getLogger(".GPLDistill" + __name__)
         self.logger_.info(f"Evaluating the model every {eval_every} step")
@@ -65,6 +65,9 @@ class GPLDistill(pl.LightningModule):
         
         # self.cross_encoder.zero_grad()
         # self.cross_encoder.train()
+        
+        self.query_per_passage = query_per_passage
+        self.augment_mod = augmented_mod
     def setup(self,stage):
         corpus, queries, qrels = GenericDataLoader(self.path, prefix="imp_gpl").load(split="train")
         corpus_test, queries_test, qrels_test = GenericDataLoader(self.path).load(split="test")
@@ -197,6 +200,8 @@ class GPLDistill(pl.LightningModule):
                 self.path,
                 f"{self.base_model}{arg1}",
                 f"test_step_{self.global_step}",
+                f"nr_queries_per_passage_{self.query_per_passage}",
+                f"augmented_mod_{self.augment_mod}"
             ),
         )
         writer.evaluate_query_based(qrels)
