@@ -33,7 +33,7 @@ def query_writer(path:str,
          forward_model_path: str,
          back_model_path: str,
          augment_per_query: int,
-         augment_temperature:float):
+         augment_temperature:float) -> int:
     
     writer = QueryWriter(queries_per_passage= queries_per_passage, path_to_data= path, gpl_data_prefix="imp_gpl")
     writer.generate(use_train_qrels=use_train_qrels, 
@@ -47,6 +47,7 @@ def query_writer(path:str,
                     back_model_path = back_model_path,
                     augment_per_query= augment_per_query,
                     augment_temperature= augment_temperature)
+    return writer.queries_per_passage
 
 def hard_negative_miner(path:str, 
                         negatives_per_query: int, 
@@ -68,7 +69,9 @@ def train(path : str,
              evaluate_baseline: bool,
              max_seq_length: int,
              seed: int,
-             name: str
+             name: str,
+             q_per_passage: int, 
+             augmented_mod: QueryAugmentMod,
              ):
     logger = TensorBoardLogger("tb_logs", name=name)
     # 140,000 steps for every BEIR dataset.
@@ -91,7 +94,9 @@ def train(path : str,
                          evaluate_baseline=evaluate_baseline,
                          eval_every=eval_every,
                          warmup_steps=warmup_steps,
-                         max_seq_length=max_seq_length
+                         max_seq_length=max_seq_length,
+                         query_per_passage=q_per_passage,
+                         augmented_mod=augmented_mod
                          )
     trainer.fit(model=distill)
     
@@ -104,10 +109,10 @@ def main(cfg: DictConfig) -> None:
         for new_path in os.listdir(path):
             new_path = os.path.join(path,new_path)
             print(f"GPL for {new_path}")
-            query_writer(path = new_path, 
+            resolved_queries_per_passage = query_writer(path = new_path, 
                         queries_per_passage = cfg.query_writer.queries_per_passage, 
                         batch_size = cfg.query_writer.batch_size,
-                        augmented=cfg.query_writer.augmented, 
+                        augmented=QueryAugmentMod(cfg.query_writer.augmented), 
                         use_train_qrels=cfg.query_writer.use_train_qrels, 
                         top_p = cfg.query_writer.top_p , 
                         top_k = cfg.query_writer.top_k, 
@@ -120,7 +125,7 @@ def main(cfg: DictConfig) -> None:
 
             hard_negative_miner(path = new_path,
                                 negatives_per_query= cfg.hard_negative_miner.negatives_per_query, 
-                                query_augment_mod=cfg.hard_negative_miner.query_augment_mod, 
+                                query_augment_mod=QueryAugmentMod(cfg.hard_negative_miner.query_augment_mod), 
                                 models=cfg.hard_negative_miner.models, 
                                 score=[SCORE(score) for score in cfg.hard_negative_miner.score],
                                 use_train_qrels=cfg.hard_negative_miner.use_train_qrels)
@@ -136,12 +141,14 @@ def main(cfg: DictConfig) -> None:
                     evaluate_baseline = cfg.trainer.evaluate_baseline, 
                     max_seq_length = cfg.trainer.max_seq_length, 
                     seed = cfg.trainer.seed,
-                    name = cfg.trainer.name + f"_{new_path}") 
+                    name = cfg.trainer.name + f"_{new_path}",
+                    q_per_passage= resolved_queries_per_passage,
+                    augmented_mod= QueryAugmentMod(cfg.query_writer.augmented)) 
     else:
-        query_writer(path = path, 
+        resolved_queries_per_passage = query_writer(path = path, 
                     queries_per_passage = cfg.query_writer.queries_per_passage, 
                     batch_size = cfg.query_writer.batch_size,
-                    augmented=cfg.query_writer.augmented, 
+                    augmented=QueryAugmentMod(cfg.query_writer.augmented), 
                     use_train_qrels=cfg.query_writer.use_train_qrels, 
                     top_p = cfg.query_writer.top_p , 
                     top_k = cfg.query_writer.top_k, 
@@ -154,7 +161,7 @@ def main(cfg: DictConfig) -> None:
 
         hard_negative_miner(path = path,
                             negatives_per_query= cfg.hard_negative_miner.negatives_per_query, 
-                            query_augment_mod=cfg.hard_negative_miner.query_augment_mod, 
+                            query_augment_mod=QueryAugmentMod(cfg.query_writer.augmented),
                             models=cfg.hard_negative_miner.models, 
                             score=[SCORE(score) for score in cfg.hard_negative_miner.score],
                             use_train_qrels=cfg.hard_negative_miner.use_train_qrels)
@@ -170,7 +177,10 @@ def main(cfg: DictConfig) -> None:
                 evaluate_baseline = cfg.trainer.evaluate_baseline, 
                 max_seq_length = cfg.trainer.max_seq_length, 
                 seed = cfg.trainer.seed,
-                name = cfg.trainer.name)
+                name = cfg.trainer.name,
+                q_per_passage= resolved_queries_per_passage,
+                augmented_mod= QueryAugmentMod(cfg.query_writer.augmented)
+                )
     
 if __name__ == "__main__":
     gc.collect()
