@@ -24,7 +24,7 @@ hard_negative_miner:
   use_train_qrels: False
 
 trainer:
-  cross_encoders : ["cross-encoder/ms-marco-MiniLM-L-6-v2"]
+  cross_encoders : ["cross-encoder/ms-marco-electra-base"]
   bi_retriver : GPL/msmarco-distilbert-margin-mse
   t_total: 140000
   eval_every: 10000
@@ -34,4 +34,4 @@ trainer:
   evaluate_baseline: False
   max_seq_length: 350
   seed: 1
-  name: scifact_no_aug
+  name: scifact_no_aug_electra_teacher
