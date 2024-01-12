@@ -1,6 +1,8 @@
 data:
-  dataset_name: scifact
+  dataset_name: fiqa
   output_folder: ./generated_improved
+  given_path: ./gpl_given_data/fiqa
+  prefix: "qgen"
 
 query_writer:
   queries_per_passage: -1
@@ -24,9 +26,9 @@ hard_negative_miner:
   use_train_qrels: False
 
 trainer:
-  cross_encoders : ["cross-encoder/msmarco-MiniLM-L-6-v2" , "cross-encoder/ms-marco-TinyBERT-L-6"]
-  reducer : "normalize"
+  cross_encoders : ["cross-encoder/ms-marco-MiniLM-L-6-v2"]
   bi_retriver : GPL/msmarco-distilbert-margin-mse
+  reducer : "normalize"
   t_total: 140000
   eval_every: 10000
   batch_size: 32
@@ -35,4 +37,4 @@ trainer:
   evaluate_baseline: False
   max_seq_length: 350
   seed: 1
-  name: scifact_no_aug_two_teachers
+  name: fiqa_no_aug_mini_lm_normalized

@@ -173,3 +173,4 @@ tb_logs/*
 *.tsv
 outputs/*
 *.ckpt
+gpl_given_data/*
