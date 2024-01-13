@@ -236,9 +236,8 @@ class GPLDistill(pl.LightningModule):
     
     
     def train_dataloader(self):
-        corpus, gen_queries, _ = GenericDataLoader(self.path, prefix=self.prefix).load(split="train")
         hard_negative_dataset = HardNegativeDataset(
-        os.path.join(self.path, "hard-negatives.jsonl"), gen_queries, corpus
+        os.path.join(self.path, "hard-negatives.jsonl"), self.train_queries, self.train_corpus
         )
         hard_negative_dataloader = DataLoader(
         hard_negative_dataset, shuffle=True, batch_size=self.batch_size, drop_last=True,
@@ -252,7 +251,8 @@ class GPLDistill(pl.LightningModule):
         self.bi_retriver.train()
         self.bi_retriver.zero_grad()
     def _evaluate(self, split, arg1):
-        corpus, queries, qrels = GenericDataLoader(self.path).load(split=split)
+        if split == "test":
+            corpus, queries, qrels = self.test_corpus, self.test_queries, self.test_qrels
         retriver = EvaluateGPL(self.bi_retriver, queries, corpus)
         if self.bm25_reweight:
             self.logger_.info("Using the BM25 Wrapper for evaluator")
