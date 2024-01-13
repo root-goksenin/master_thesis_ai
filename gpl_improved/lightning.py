@@ -255,7 +255,7 @@ class GPLDistill(pl.LightningModule):
         corpus, queries, qrels = GenericDataLoader(self.path).load(split=split)
         retriver = EvaluateGPL(self.bi_retriver, queries, corpus)
         if self.bm25_reweight:
-            self.logger.info("Using the BM25 Wrapper for evaluator")
+            self.logger_.info("Using the BM25 Wrapper for evaluator")
             retriver = BM25Wrapper(retriver, bm25_reweight = self.bm25_reweight, corpus_name = self.corpus_name, bm25_weight = self.bm25_weight)
         writer = RetriverWriter(
             retriver=retriver,

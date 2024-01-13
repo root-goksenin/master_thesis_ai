@@ -78,6 +78,7 @@ def train(path : str,
              reducer: str,
              bm25_reweight: bool,
              corpus_name: str,
+             bm25_weight: int,
              ):
     logger = TensorBoardLogger("tb_logs", name=name)
     # 140,000 steps for every BEIR dataset.
@@ -108,14 +109,16 @@ def train(path : str,
                          prefix = prefix,
                          reducer = reducer,
                          bm25_reweight= bm25_reweight,
-                         corpus_name = corpus_name
+                         corpus_name = corpus_name,
+                         bm25_weight= bm25_weight,
                          )
     trainer.fit(model=distill)
     
 
 @hydra.main(version_base = None)
 def main(cfg: DictConfig) -> None:
-    print(cfg)
+    print(cfg.data.given_path)
+    print(cfg.trainer.name)
     if cfg.data.given_path == "":
         path = dataset(dataset_name=BEIR_DATASETS(cfg.data.dataset_name), output_folder=cfg.data.output_folder)
     else:
@@ -159,8 +162,9 @@ def main(cfg: DictConfig) -> None:
             augmented_mod= QueryAugmentMod(cfg.query_writer.augmented),
             prefix = cfg.data.prefix,
             reducer = cfg.trainer.reducer,
-            bm25_reweight = cfg.trainer.bm25_reweight,
-            corpus_name = cfg.data.dataset_name
+            bm25_reweight = cfg.beir_evaluator.bm25_reweight,
+            corpus_name = cfg.beir_evaluator.corpus_name,
+            bm25_weight = cfg.beir_evaluator.bm25_weight
             )
     
 if __name__ == "__main__":

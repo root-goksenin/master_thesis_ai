@@ -8,7 +8,7 @@ import logging
 from torch import Tensor
 import torch
 import tqdm
-
+from beir import util
 def reweight_results(result_dense, result_bm25, weight = 0.1):
     for q_id in tqdm.tqdm(result_dense.keys()): 
         # Get the document scores for query with q_id
