@@ -174,3 +174,4 @@ tb_logs/*
 outputs/*
 *.ckpt
 gpl_given_data/*
+elasticsearch*

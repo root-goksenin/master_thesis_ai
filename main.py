@@ -76,6 +76,8 @@ def train(path : str,
              augmented_mod: QueryAugmentMod,
              prefix: str,
              reducer: str,
+             bm25_reweight: bool,
+             corpus_name: str,
              ):
     logger = TensorBoardLogger("tb_logs", name=name)
     # 140,000 steps for every BEIR dataset.
@@ -104,7 +106,9 @@ def train(path : str,
                          augmented_mod=augmented_mod,
                          save_name = name,
                          prefix = prefix,
-                         reducer = reducer
+                         reducer = reducer,
+                         bm25_reweight= bm25_reweight,
+                         corpus_name = corpus_name
                          )
     trainer.fit(model=distill)
     
@@ -155,6 +159,8 @@ def main(cfg: DictConfig) -> None:
             augmented_mod= QueryAugmentMod(cfg.query_writer.augmented),
             prefix = cfg.data.prefix,
             reducer = cfg.trainer.reducer,
+            bm25_reweight = cfg.trainer.bm25_reweight,
+            corpus_name = cfg.data.dataset_name
             )
     
 if __name__ == "__main__":
