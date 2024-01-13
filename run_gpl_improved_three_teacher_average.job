@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu
+#SBATCH --gpus=1
+#SBATCH --job-name=covid-threeteacher
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=18
+#SBATCH --time=20:00:00
+#SBATCH --output=slurm_output_%A.out
+
+
+module load 2022
+module load Anaconda3/2022.05 
+source activate gpl_env_1
+
+cd $HOME/master_thesis_ai
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
+
+srun python main.py --config-name=config.yaml --config-dir=./ data.dataset_name=trec-covid trainer.cross_encoders=["cross-encoder/ms-marco-MiniLM-L-6-v2","cross-encoder/ms-marco-TinyBERT-L-6","cross-encoder/ms-marco-MiniLM-L-4-v2"] trainer.bi_retriver_name=three_teacher

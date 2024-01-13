@@ -1,17 +1,37 @@
 
-from beir import util, LoggingHandler
 from enum import Enum
 import os
-from torch.utils.data import Dataset
-import json
-from sentence_transformers.readers.InputExample import InputExample
-import random
-import linecache
 from typing import Dict
 import logging
 from sentence_transformers import SentenceTransformer, models
 import logging
 from torch import Tensor
+import torch
+import tqdm
+from beir import util
+def reweight_results(result_dense, result_bm25, weight = 0.1):
+    for q_id in tqdm.tqdm(result_dense.keys()): 
+        # Get the document scores for query with q_id
+        dense_score = result_dense[q_id]
+        bm25_score = result_bm25[q_id]
+        result_bm25[q_id] = {key: dense_score[key] + (weight * bm25_score[key]) for key in bm25_score.keys()}
+    return result_bm25
+
+def load_pretrained_bi_retriver(data_name: str, model_name: str, aug_strategy: str):
+    model = torch.load(
+        f"/home/gyuksel/master_thesis_ai/saved_models/gpl_improved/{data_name}_{aug_strategy}_{model_name}/last.ckpt"
+    )
+    bi_retriver_weights = {
+        ".".join(layer.split(".")[1:]): weight
+        for layer, weight in model["state_dict"].items()
+        if "bi_retriver" in layer
+    }
+    bi_retriver = load_sbert(
+        "GPL/msmarco-distilbert-margin-mse", pooling=None, max_seq_length=350
+    )
+    bi_retriver.load_state_dict(bi_retriver_weights)
+    return bi_retriver
+
 
 def batch_to_device(batch, target_device):
     """

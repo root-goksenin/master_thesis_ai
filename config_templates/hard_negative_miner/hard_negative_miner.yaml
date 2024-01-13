@@ -1,0 +1,6 @@
+hard_negative_miner:
+  negatives_per_query: 50
+  query_augment_mod: ${query_writer.augmented}
+  models: ["msmarco-distilbert-base-v3", "msmarco-MiniLM-L-6-v3"]
+  score: [cos_sim, cos_sim]
+  use_train_qrels: False

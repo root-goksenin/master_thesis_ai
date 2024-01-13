@@ -82,16 +82,6 @@ class QueryWriter:
                augment_temperature : float = 2.0):
     assert "corpus.jsonl" in os.listdir(self.path_to_data), "At least corpus should exist!"
 
-    if self.queries_per_passage == -1:
-        corpus = GenericDataLoader(self.path_to_data).load_corpus()
-        if len(corpus) * 3 < 250e3:
-            self.queries_per_passage = math.ceil(
-                250e3 / len(corpus)
-            )  # Here use ceil to guarantee the QPP will not be too small
-        else:
-            self.queries_per_passage = 3
-        self.logger.info(f"Automatically set `queries_per_passage` to {self.queries_per_passage}")
-
     if use_train_qrels:
       assert "qrels" in os.listdir(self.path_to_data) and "queries.jsonl" in os.listdir(self.path_to_data), "No queries found"
       self.logger.info("Loading from existing labeled data")
@@ -108,6 +98,16 @@ class QueryWriter:
       ).load(split="train")
     else:
       self.logger.info("No generated queries found. Now generating it")
+      if self.queries_per_passage == -1:
+        corpus = GenericDataLoader(self.path_to_data).load_corpus()
+        if len(corpus) * 3 < 250e3:
+            self.queries_per_passage = math.ceil(
+                250e3 / len(corpus)
+            )  # Here use ceil to guarantee the QPP will not be too small
+        else:
+            self.queries_per_passage = 3
+        self.logger.info(f"Automatically set `queries_per_passage` to {self.queries_per_passage}")
+
       qgen(
           self.path_to_data,
           self.path_to_data,

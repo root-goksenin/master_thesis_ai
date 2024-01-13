@@ -1,0 +1,13 @@
+query_writer:
+  queries_per_passage: -1
+  batch_size: 8
+  augmented: None
+  use_train_qrels: False
+  top_p: 0.95
+  top_k: 25
+  max_length: 64
+  augment_probability : 1.0
+  forward_model_path: Helsinki-NLP/opus-mt-en-fr
+  back_model_path: Helsinki-NLP/opus-mt-fr-en
+  augment_per_query : 2
+  augment_temperature : 2.0

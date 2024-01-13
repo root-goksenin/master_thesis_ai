@@ -1,0 +1,5 @@
+data:
+  dataset_name: hotpotqa
+  output_folder: ./generated_improved
+  given_path: ./gpl_given_data/${data.dataset_name}
+  prefix: "qgen"
