@@ -9,6 +9,9 @@ from torch import Tensor
 import torch
 import tqdm
 from beir import util
+import numpy as np
+
+
 def reweight_results(result_dense, result_bm25, weight = 0.1):
     for q_id in tqdm.tqdm(result_dense.keys()): 
         # Get the document scores for query with q_id
@@ -17,9 +20,10 @@ def reweight_results(result_dense, result_bm25, weight = 0.1):
         result_bm25[q_id] = {key: dense_score[key] + (weight * bm25_score[key]) for key in bm25_score.keys()}
     return result_bm25
 
-def load_pretrained_bi_retriver(data_name: str, model_name: str, aug_strategy: str):
+def load_pretrained_bi_retriver(data_name: str, model_name: str, aug_strategy: str, checkpoint_name : str = "last"):
     model = torch.load(
-        f"/home/gyuksel/master_thesis_ai/saved_models/gpl_improved/{data_name}_{aug_strategy}_{model_name}/last.ckpt"
+        f"/home/gyuksel/master_thesis_ai/saved_models/gpl_improved/{data_name}_{aug_strategy}_{model_name}/{checkpoint_name}.ckpt",
+        map_location=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),
     )
     bi_retriver_weights = {
         ".".join(layer.split(".")[1:]): weight
@@ -141,3 +145,42 @@ def load_sbert(model_name_or_path, pooling=None, max_seq_length=None):
 
     logger.info("Finished loading the sentence transformer model")
     return model
+
+def get_word_idx(sent: str, word: str):
+    return sent.split(" ").index(word)
+
+
+def get_hidden_states(encoded, token_ids_word, model, layers):
+    """Push input IDs through model. Stack and sum `layers` (last four by default).
+    Select only those subword token outputs that belong to our word of interest
+    and average them."""
+    with torch.no_grad():
+        output = model(**encoded)
+
+    # Get all hidden states
+    states = output.hidden_states
+    # Stack and sum all requested layers
+    output = torch.stack([states[i] for i in layers]).sum(0).squeeze()
+    # Only select the tokens that constitute the requested word
+    word_tokens_output = output[token_ids_word]
+
+    return word_tokens_output.mean(dim=0)
+
+
+def get_sentence_embeddings(sent, model):
+    """Get a word vector by first tokenizing the input sentence, getting all token idxs
+    that make up the word of interest, and then `get_hidden_states`."""
+    sentence_embedding = model.encode(sent, convert_to_numpy= True, convert_to_tensor = False)
+    if len(sentence_embedding.shape) == 1:
+        sentence_embedding = np.expand_dims(sentence_embedding, axis = 0)
+    return sentence_embedding
+
+
+def get_token_embeddings(sent, model):
+    token_embeddings = model.encode(sent, output_value = "token_embeddings").cpu().numpy()
+    if len(token_embeddings.shape) == 1:
+        token_embeddings = np.expand_dims(token_embeddings, axis = 0)
+    return token_embeddings
+   
+
+
