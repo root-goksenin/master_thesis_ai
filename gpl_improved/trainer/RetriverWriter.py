@@ -134,7 +134,6 @@ class EvaluateGPL:
       self.corpus = corpus
       self.retriever = EvaluateRetrieval(
           model_dres, score_function=score_function.value, k_values=[len(self.corpus)]
-
       )
       self.results_ = None
 
