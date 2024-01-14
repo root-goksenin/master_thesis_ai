@@ -8,6 +8,53 @@ from beir.retrieval import models
 from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
 from beir.retrieval.evaluation import EvaluateRetrieval
 import matplotlib.pyplot as plt
+from collections import namedtuple
+
+topk_namedtuple = namedtuple('topk_namedtuple', ['values', 'indices'])
+def topk(array: np.ndarray, k: int, largest: bool = True) -> topk_namedtuple:
+    """Returns the k largest/smallest elements and corresponding indices 
+    from an array-like input.
+    Parameters
+    ----------
+    array : np.ndarray or list
+        the array-like input
+    k : int
+        the k in "top-k" 
+    largest ： bool, optional
+        controls whether to return largest or smallest elements        
+    Returns
+    -------
+    namedtuple[values, indices]
+        Returns the :attr:`k` largest/smallest elements and corresponding indices 
+        of the given :attr:`array`
+    Example
+    -------
+    >>> array = [5, 3, 7, 2, 1]
+    >>> topk(array, 2)
+    >>> topk_namedtuple(values=array([7, 5]), indices=array([2, 0], dtype=int64))
+    >>> topk(array, 2, largest=False)
+    >>> topk_namedtuple(values=array([1, 2]), indices=array([4, 3], dtype=int64))
+    >>> array = [[1, 2], [3, 4], [5, 6]]
+    >>> topk(array, 2)
+    >>> topk_namedtuple(values=array([6, 5]), indices=(array([2, 2], dtype=int64), array([1, 0], dtype=int64)))
+    """
+
+    array = np.asarray(array)
+    flat = array.ravel()
+
+    if largest:
+        indices = np.argpartition(flat, -k)[-k:]
+        argsort = np.argsort(-flat[indices])
+    else:
+        indices = np.argpartition(flat, k)[:k]
+        argsort = np.argsort(flat[indices])
+
+    indices = indices[argsort]
+    values = flat[indices]
+    indices = np.unravel_index(indices, array.shape)
+    if len(indices) == 1:
+        indices, = indices
+    return values, indices
 
 def vectorized_cos_sim(a_array, b_array):
     norm_a = np.linalg.norm(a_array, axis=1, keepdims=True)
@@ -32,7 +79,10 @@ def main(data_name, aug_strategy, model_name):
     
     plot_comparison(test_corpus, doc_sim, query_sim, before_results, adapted_results)
     print(find_most_similar(query_mapping, query_sim))
-    # find_most_dissimilar(test_corpus, doc_sim)
+    print(find_most_disimilar(query_mapping, query_sim))
+    print("CORPUS:")
+    print(find_most_similar(doc_mapping, doc_sim, k = 3))
+    print(find_most_disimilar(doc_mapping, doc_sim, k = 3))
 
 def plot_comparison(test_corpus, doc_sim, query_sim, before_results, adapted_results):
     avg_before = np.zeros((len(before_results), len(test_corpus)))
@@ -53,11 +103,13 @@ def plot_comparison(test_corpus, doc_sim, query_sim, before_results, adapted_res
     plt.hist(query_sim)
     plt.savefig("query_sim.png")
 
-def find_most_similar(query_id_mapping, query_sim):
-    sorted_indices = np.argsort(query_sim)[::-1]
-    # Get top 10 indices
-    top_10_indices = sorted_indices[:10]
-    return [query_id_mapping[id] for id in top_10_indices]
+def find_most_similar(query_id_mapping, query_sim, k = 10):
+    values, indices = topk(query_sim, k)
+    return [query_id_mapping[id] for id in indices[0]], values
+
+def find_most_disimilar(query_id_mapping, query_sim, k = 10):
+    values, indices = topk(query_sim, k, False)
+    return [query_id_mapping[id] for id in indices[0]], values
 
 def compute_embedding_sim(model_baseline, model_after, data, encode_func):
     data = [data[d_id] for d_id in data]
