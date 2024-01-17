@@ -11,4 +11,4 @@ trainer:
   evaluate_baseline: True
   max_seq_length: 350
   seed: 1
-  name: aug_${query_writer.augmented}_${trainer.bi_retriver_name}_${trainer.reducer}
+  name: ${query_writer.augmented}_${trainer.bi_retriver_name}_${trainer.reducer}

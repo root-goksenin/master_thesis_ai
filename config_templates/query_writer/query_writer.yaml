@@ -1,7 +1,7 @@
 query_writer:
   queries_per_passage: -1
   batch_size: 8
-  augmented: None
+  augmented: no_aug
   use_train_qrels: False
   top_p: 0.95
   top_k: 25

@@ -123,7 +123,7 @@ class EvaluateGPL:
 
   """
 
-  def __init__(self, model, query, corpus, score_function: SCORE = SCORE.DOT):
+  def __init__(self, model, query, corpus, score_function: SCORE = SCORE.DOT, k_val = None):
       # Model to be Evaluated. This is gonna be transformed into self.qmodel and self.dmodel from sentence bert
       self.retriever = models.SentenceBERT(sep=" ")
       self.retriever.q_model = model
@@ -133,7 +133,7 @@ class EvaluateGPL:
       self.query = query
       self.corpus = corpus
       self.retriever = EvaluateRetrieval(
-          model_dres, score_function=score_function.value, k_values=[len(self.corpus)]
+          model_dres, score_function=score_function.value, k_values=[len(self.corpus) if k_val is None else k_val]
       )
       self.results_ = None
 

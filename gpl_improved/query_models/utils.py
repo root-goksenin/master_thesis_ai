@@ -2,7 +2,7 @@ from enum import Enum, auto
 import torch
 
 class QueryAugmentMod(Enum):
-  None_ = "None"
+  None_ = "no_aug"
   UseNew = "Retrive_New"
   UsePast = "Use_Past"
 

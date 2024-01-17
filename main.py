@@ -80,10 +80,10 @@ def train(path : str,
              corpus_name: str,
              bm25_weight: int,
              ):
-    logger = TensorBoardLogger("tb_logs", name=f"{corpus_name}_name")
+    logger = TensorBoardLogger("tb_logs", name=f"{corpus_name}_{name}")
     # 140,000 steps for every BEIR dataset.
     checkpoint_callback = ModelCheckpoint(monitor='ndcg_train',
-                                          dirpath=f'./saved_models/gpl_improved/{name}',
+                                          dirpath=f'./saved_models/gpl_improved/{corpus_name}_{name}',
                                           mode='max',
                                           filename = '{step}-{ndcg_train:.3f}',
                                           verbose = True,
