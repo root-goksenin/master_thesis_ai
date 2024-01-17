@@ -30,9 +30,9 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
                     handlers=[LoggingHandler()])
 #### /print debug information to stdout
 
-data_name = "trec-covid"
+data_name = "fiqa"
 data_path = f"/home/gyuksel/master_thesis_ai/gpl_given_data/{data_name}"
-corpus, queries, qrels = GenericDataLoader(data_path).load(split="test")
+corpus, queries, qrels = GenericDataLoader(data_path).load(split="dev")
 
 #### Lexical Retrieval using Bm25 (Elasticsearch) ####
 #### Provide a hostname (localhost) to connect to ES instance
@@ -46,7 +46,7 @@ index_name = data_name
 #### Intialize #### 
 # (1) True - Delete existing index and re-index all documents from scratch 
 # (2) False - Load existing index
-initialize = True # False
+initialize = False # False
 
 #### Sharding ####
 # (1) For datasets with small corpus (datasets ~ < 5k docs) => limit shards = 1 
@@ -60,5 +60,5 @@ retriever = EvaluateRetrieval(model, k_values=[9999])
 #### Retrieve dense results (format of results is identical to qrels)
 results = retriever.retrieve(corpus, queries)
 
-with open(f"bm25_scores/{index_name}/bm25_scores.json", "w") as f:
+with open(f"bm25_scores/{index_name}/dev_bm25_scores.json", "w") as f:
     json.dump(results, f)

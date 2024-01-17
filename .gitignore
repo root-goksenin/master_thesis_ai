@@ -175,3 +175,4 @@ outputs/*
 *.ckpt
 gpl_given_data/*
 elasticsearch*
+*.job

@@ -16,4 +16,4 @@ source activate gpl_env_1
 cd $HOME/master_thesis_ai
 export CUBLAS_WORKSPACE_CONFIG=:4096:8
 
-srun python main.py --config-name=config.yaml --config-dir=./ data.dataset_name=trec-covid trainer.cross_encoders=["cross-encoder/ms-marco-TinyBERT-L-6"] trainer.bi_retriver_name=tiny_bert
+srun python main.py --config-name=config.yaml --config-dir=./ data.dataset_name=quora trainer.cross_encoders=["cross-encoder/ms-marco-TinyBERT-L-6"] trainer.bi_retriver_name=tiny_bert
