@@ -5,11 +5,12 @@ import numpy as np
 from typing import List 
 from gpl_improved.utils import SCORE, reweight_results
 from beir.retrieval import models
-from beir.retrieval.search.lexical import BM25Search as BM25
+from beir.retrieval.search.lexical import BM25Search
 from beir.retrieval.evaluation import EvaluateRetrieval
-from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
 import pytrec_eval
-
+from tensorboard.plugins import projector
+from gpl_improved.trainer.beir_utils_rewritten import DenseRetrievalExactSearch
+from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
 class RetriverWriter:
     def __init__(self, retriver, output_dir):
         self.retriver = retriver
@@ -129,7 +130,8 @@ class EvaluateGPL:
       self.retriever.q_model = model
       self.retriever.doc_model = model
       self.logger = logging.getLogger(f"{__name__}.EvaluateGPL")
-      model_dres = DRES(self.retriever, batch_size=32)
+      # Try 256..
+      model_dres = DRES(self.retriever, batch_size=256)
       self.query = query
       self.corpus = corpus
       self.retriever = EvaluateRetrieval(
@@ -207,4 +209,20 @@ class BM25Wrapper():
       else:
         self.results_ = self.wrapper.results()
     return self.results_
+
+
+class TensorBoardEmbeddingVisualizer():
     
+    def __init__(self, log_dir):
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        self.log_dir = log_dir 
+        # Set up config.
+    def visualize_embeddings(self, embedding_dir):
+        # Set the config
+        config = projector.ProjectorConfig()
+        embedding = config.embeddings.add()
+        if os.path.exists(os.path.join(embedding_dir, 'metadata.tsv')):
+            embedding.metadata_path = 'metadata.tsv'
+        if os.path.exists(os.path.join(embedding_dir, 'embeddings')):
+            projector.visualize_embeddings(self.log_dir, config)
