@@ -7,7 +7,6 @@ from typing import Dict
 import heapq
 import psutil
 import gc 
-import sys
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +71,7 @@ class DenseRetrievalExactSearch(BaseSearch):
 
         result_heaps = {qid: [] for qid in query_ids}  # Keep only the top-k docs for each query
         for batch_num, corpus_start_idx in enumerate(itr):
+            # Something is going wrong in this for loop with memory
             logger.info(f"Encoding Batch {batch_num + 1}/{len(itr)}...")
             corpus_end_idx = min(corpus_start_idx + self.corpus_chunk_size, len(corpus))
 
@@ -86,10 +86,13 @@ class DenseRetrievalExactSearch(BaseSearch):
 
             # Compute similarites using either cosine-similarity or dot product
             cos_scores = self.score_functions[score_function](query_embeddings, sub_corpus_embeddings)
+            del sub_corpus_embeddings
             cos_scores[torch.isnan(cos_scores)] = -1
 
             # Get top-k values
             cos_scores_top_k_values, cos_scores_top_k_idx = torch.topk(cos_scores, min(top_k+1, len(cos_scores[1])), dim=1, largest=True, sorted=return_sorted)
+            del cos_scores
+            # Possibly this part.
             cos_scores_top_k_values = cos_scores_top_k_values.cpu().tolist()
             cos_scores_top_k_idx = cos_scores_top_k_idx.cpu().tolist()
 
@@ -104,11 +107,9 @@ class DenseRetrievalExactSearch(BaseSearch):
                         else:
                             # If item is larger than the smallest in the heap, push it on the heap then pop the smallest element
                             heapq.heappushpop(result_heaps[query_id], (score, corpus_id))
-            
             del cos_scores_top_k_values,cos_scores_top_k_idx
-            logging.info(f"Current memory usage is : {psutil.virtual_memory().percent}")
-            logging.info(f"Current memory footprint of heapq is {sys.getsizeof(result_heaps)}")
-            
+            gc.collect()
+            logging.info(f"Current memory usage is : {psutil.virtual_memory().percent}")            
 
         for qid, value in result_heaps.items():
             for score, corpus_id in value:

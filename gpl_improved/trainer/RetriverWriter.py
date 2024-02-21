@@ -9,7 +9,7 @@ from beir.retrieval.search.lexical import BM25Search
 from beir.retrieval.evaluation import EvaluateRetrieval
 import pytrec_eval
 from tensorboard.plugins import projector
-from gpl_improved.trainer.beir_utils_rewritten import DenseRetrievalExactSearch
+from gpl_improved.trainer.beir_utils_rewritten import DenseRetrievalExactSearch as DRES_new
 from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
 class RetriverWriter:
     def __init__(self, retriver, output_dir):
@@ -131,7 +131,7 @@ class EvaluateGPL:
       self.retriever.doc_model = model
       self.logger = logging.getLogger(f"{__name__}.EvaluateGPL")
       # Try 256..
-      model_dres = DRES(self.retriever, batch_size=256)
+      model_dres = DRES_new(self.retriever, batch_size=256)
       self.query = query
       self.corpus = corpus
       self.retriever = EvaluateRetrieval(

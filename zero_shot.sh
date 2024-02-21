@@ -5,7 +5,7 @@
 #SBATCH --job-name=covid-tinybert
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=18
-#SBATCH --time=03:00:00
+#SBATCH --time=05:00:00
 #SBATCH --output=slurm_output_%A.out
 #SBATCH --mem=80G
 
@@ -19,8 +19,20 @@ export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
 models=(msmarco-distilbert-dot-v5 multi-qa-distilbert-dot-v1 GPL/msmarco-distilbert-margin-mse)
-datasets=(beir_data/scidocs beir_data/trec-covid beir_data/fever)
-
+datasets=(/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/android
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/english
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/gaming
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/gis
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/mathematica
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/physics
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/programmers
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/stats
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/tex
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/unix
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/webmasters
+/gpfs/home1/gyuksel/master_thesis_ai/beir_data/cqadupstack/wordpress
+beir_data/quora
+)
 for model in "${models[@]}" 
     do
     for data in "${datasets[@]}" 
