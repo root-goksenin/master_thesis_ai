@@ -176,3 +176,6 @@ outputs/*
 gpl_given_data/*
 elasticsearch*
 *.job
+*.vscode
+bm25_scores/*
+zero_shot_results/*
