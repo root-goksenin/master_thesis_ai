@@ -15,50 +15,42 @@ Usage: python evaluate_bm25.py
 """
 
 
-from beir import util, LoggingHandler
+from beir import LoggingHandler
 from beir.datasets.data_loader import GenericDataLoader
 from beir.retrieval.evaluation import EvaluateRetrieval
 from beir.retrieval.search.lexical import BM25Search as BM25
-
+from gpl_improved.trainer.RetriverWriter import RetriverWriter, EvaluateGPL
 import json
 import logging
-
+import click
+import os
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO,
                     handlers=[LoggingHandler()])
 #### /print debug information to stdout
+logger = logging.getLogger(__name__)
 
-data_name = "fiqa"
-data_path = f"/home/gyuksel/master_thesis_ai/gpl_given_data/{data_name}"
-corpus, queries, qrels = GenericDataLoader(data_path).load(split="dev")
 
-#### Lexical Retrieval using Bm25 (Elasticsearch) ####
-#### Provide a hostname (localhost) to connect to ES instance
-#### Define a new index name or use an already existing one.
-#### We use default ES settings for retrieval
-#### https://www.elastic.co/
 
-hostname = "localhost" #localhost
-index_name = data_name 
-
-#### Intialize #### 
-# (1) True - Delete existing index and re-index all documents from scratch 
-# (2) False - Load existing index
-initialize = False # False
-
-#### Sharding ####
-# (1) For datasets with small corpus (datasets ~ < 5k docs) => limit shards = 1 
-# SciFact is a relatively small dataset! (limit shards to 1)
-model = BM25(index_name=index_name, hostname=hostname, initialize=initialize, timeout=10000)
-
-# (2) For datasets with big corpus ==> keep default configuration
-# model = BM25(index_name=index_name, hostname=hostname, initialize=initialize)
-retriever = EvaluateRetrieval(model, k_values=[9999])
-
-#### Retrieve dense results (format of results is identical to qrels)
-results = retriever.retrieve(corpus, queries)
-
-with open(f"bm25_scores/{index_name}/dev_bm25_scores.json", "w") as f:
-    json.dump(results, f)
+@click.command()
+@click.option("--data_name", type = str)
+def main(data_name):
+    data_path = f"/home/gyuksel/master_thesis_ai/{data_name}"
+    corpus, queries, qrels = GenericDataLoader(data_path).load(split="dev")
+    hostname = "localhost"
+    index_name = os.path.split(data_name)[1]
+    logger.info(f"BM25 for {data_path} as index {index_name}")
+    initialize = True
+    model = BM25(index_name=index_name, hostname=hostname, initialize=initialize, timeout=10000)
+    # Normally EvaluateGPL is used for evaluating dense models. So we need this hacky way of getting the BM25 model into EvaluateGPL
+    evaluator = EvaluateGPL(model = model, query=queries, corpus= corpus)
+    # A bit hacky way of getting BM25 into the EvaluateGPL
+    evaluator.retriever = EvaluateRetrieval(model, k_values=[1000])
+    # Init Writer, and write scores.
+    writer = RetriverWriter(evaluator, output_dir=f"bm25_scores/{index_name}", write_scores=True)
+    writer.evaluate_beir_format(qrels)
+    
+if __name__ == "__main__":
+    main()

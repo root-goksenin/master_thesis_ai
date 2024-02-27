@@ -4,7 +4,6 @@ import os
 from typing import Dict
 import logging
 from sentence_transformers import SentenceTransformer, models
-import logging
 from torch import Tensor
 import torch
 import tqdm

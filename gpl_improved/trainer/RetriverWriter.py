@@ -5,17 +5,21 @@ import numpy as np
 from typing import List 
 from gpl_improved.utils import SCORE, reweight_results
 from beir.retrieval import models
-from beir.retrieval.search.lexical import BM25Search as BM25
+from beir.retrieval.search.lexical import BM25Search
 from beir.retrieval.evaluation import EvaluateRetrieval
-from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
 import pytrec_eval
+from tensorboard.plugins import projector
+from gpl_improved.trainer.beir_utils_rewritten import DenseRetrievalExactSearch as DRES_new
+from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
+
 
 class RetriverWriter:
-    def __init__(self, retriver, output_dir):
+    def __init__(self, retriver, output_dir, write_scores = False):
         self.retriver = retriver
-        self.k_values = [1, 3, 5, 10, 20, 100]
+        self.k_values = retriver.k_values
         self.output_dir = output_dir
         self.logger = logging.getLogger(f"{__name__}.RetriverWriter")
+        self.write_scores = write_scores
 
     def evaluate_beir_format(self, query_corpus_relativity):
         '''
@@ -31,6 +35,9 @@ class RetriverWriter:
         ndcg, _map, recall, precision, mrr = self.calculate_metrics(ndcg, _map, recall, precision, mrr)
         result_path = self.write_to_dir(ndcg, _map, recall, precision, mrr)
         self.logger.info(f"Saved evaluation results to {result_path}")
+        if self.write_scores:
+            result_path = self.write_scores_to_dir()
+            self.logger.info(f"Saved scores to {result_path}")        
 
     def calculate_metrics(self, ndcg, _map, recall, precision, mrr):
         ndcgs = [ndcg]
@@ -63,7 +70,17 @@ class RetriverWriter:
             )
             
         return result_path
-
+    def write_scores_to_dir(self):
+        os.makedirs(self.output_dir, exist_ok=True)
+        result_path = os.path.join(self.output_dir, "scores.json")
+        with open(result_path, "w") as f:
+            json.dump(
+                self.retriver.results_,
+                f,
+                indent=4,
+            )
+            
+        return result_path
     def evaluate_query_based(self, query_corpus_relativity):
       '''
       Evaluate Retriver using query based evaluations.
@@ -96,7 +113,9 @@ class RetriverWriter:
               indent=4,
           )
       self.logger.info(f"Saved evaluation results to {result_path}")
-
+      if self.write_scores:
+        result_path = self.write_scores_to_dir()
+        self.logger.info(f"Saved scores to {result_path}")      
 
 class EvaluateGPL:
   """
@@ -123,17 +142,20 @@ class EvaluateGPL:
 
   """
 
-  def __init__(self, model, query, corpus, score_function: SCORE = SCORE.DOT, k_val = None):
+  def __init__(self, model, query, corpus, score_function: SCORE = SCORE.DOT, k_values=None):
+      if k_values is None:
+          k_values = [1,5,10,20,100,1000]
       # Model to be Evaluated. This is gonna be transformed into self.qmodel and self.dmodel from sentence bert
       self.retriever = models.SentenceBERT(sep=" ")
       self.retriever.q_model = model
       self.retriever.doc_model = model
       self.logger = logging.getLogger(f"{__name__}.EvaluateGPL")
-      model_dres = DRES(self.retriever, batch_size=32)
+      model_dres = DRES_new(self.retriever, batch_size=256)
       self.query = query
       self.corpus = corpus
+      self.k_values = k_values
       self.retriever = EvaluateRetrieval(
-          model_dres, score_function=score_function.value, k_values=[len(self.corpus) if k_val is None else k_val]
+          model_dres, score_function=score_function.value, k_values= k_values
       )
       self.results_ = None
 
@@ -207,4 +229,20 @@ class BM25Wrapper():
       else:
         self.results_ = self.wrapper.results()
     return self.results_
+
+
+class TensorBoardEmbeddingVisualizer():
     
+    def __init__(self, log_dir):
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        self.log_dir = log_dir 
+        # Set up config.
+    def visualize_embeddings(self, embedding_dir):
+        # Set the config
+        config = projector.ProjectorConfig()
+        embedding = config.embeddings.add()
+        if os.path.exists(os.path.join(embedding_dir, 'metadata.tsv')):
+            embedding.metadata_path = 'metadata.tsv'
+        if os.path.exists(os.path.join(embedding_dir, 'embeddings')):
+            projector.visualize_embeddings(self.log_dir, config)

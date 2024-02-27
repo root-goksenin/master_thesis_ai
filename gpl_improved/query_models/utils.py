@@ -5,6 +5,7 @@ class QueryAugmentMod(Enum):
   None_ = "no_aug"
   UseNew = "Retrive_New"
   UsePast = "Use_Past"
+  MISC = "None"
 
 
 def generate(model, encodings, augment_per_query: int, top_k: int, max_length: int, top_p: float = None, temperature: float = None, device: str = "cuda"):

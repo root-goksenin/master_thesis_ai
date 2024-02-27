@@ -1,0 +1,24 @@
+\begin{table}[]
+\centering
+\begin{tabular}{@{}|l|l|l|l|l|@{}}
+\toprule
+& BM25 & GPL Baseline & MSMARCO & MultiQA \\ \midrule
+NF-Corpus      & 5.9 & {} & 5.0    &  5.3   \\ \midrule
+    FIQA           & 11.6 & 12.7 & 13.4    &  21.0   \\ \midrule
+    SCIDocs        & 3.9 & 3.5 & 3.5    &  3.8   \\ \midrule
+    FEVER          & 45.8 & 61.6 & 62.2    &  29.2   \\ \midrule
+    Arguana        & 23.1 & 15.3 & 15.6    &  19.1   \\ \midrule
+    SCIFACT        & 55.6 & 44.8 & 45.8    &  39.6   \\ \midrule
+    TREC-COVID     & 0.2 & 0.2 & 0.2    &  0.2   \\ \midrule
+    Climate-FEVER  & 7.6 & 8.8 & 10.6    &  6.5   \\ \midrule
+    HotPot-QA      & 34.9 & 34.0 & 35.3    &  33.3   \\ \midrule
+    NQ             & 16.0 & {} & 28.3    &  28.3   \\ \midrule
+    Quora          & 63.1 & 63.5 & 65.8    &  70.8   \\ \midrule
+    WebisTouche    & 2.5 & {} & 2.4    &  2.1   \\ \midrule
+    DBPedia-Entity & 6.5 & 7.4 & 7.8    &  7.6   \\ \midrule
+    CQADupstack    & 21.7 & 19.5 & 21.8    &  27.6   \\ \bottomrule
+    \end{tabular}
+    \caption{Recall@1}
+    \label{tab:my-table}
+    \end{table}
+    
