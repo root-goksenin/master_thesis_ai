@@ -31,7 +31,7 @@ def shot(model_name,data_path):
             evaluator,
             output_dir=os.path.join(
                 "./zero_shot_results", f"{data_name}", f"{model_name}"
-            ),
+            ), write_scores=True
         )
     evals.evaluate_beir_format(qrels)  
 

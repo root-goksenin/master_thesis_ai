@@ -24,7 +24,7 @@ class BaseSearch(ABC):
 # Abstract class is BaseSearch
 class DenseRetrievalExactSearch(BaseSearch):
     
-    def __init__(self, model, batch_size: int = 128, corpus_chunk_size: int = 256, **kwargs):
+    def __init__(self, model, batch_size: int = 256, corpus_chunk_size: int = 50000, **kwargs):
         #model is class that provides encode_corpus() and encode_queries()
         self.model = model
         self.batch_size = batch_size

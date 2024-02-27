@@ -19,6 +19,7 @@ from beir import LoggingHandler
 from beir.datasets.data_loader import GenericDataLoader
 from beir.retrieval.evaluation import EvaluateRetrieval
 from beir.retrieval.search.lexical import BM25Search as BM25
+from gpl_improved.trainer.RetriverWriter import RetriverWriter, EvaluateGPL
 import json
 import logging
 import click
@@ -33,22 +34,23 @@ logger = logging.getLogger(__name__)
 
 
 
-@click.option()
-@click.command("--data_name", type = str)
+@click.command()
+@click.option("--data_name", type = str)
 def main(data_name):
-    data_path = f"/home/gyuksel/master_thesis_ai/gpl_given_data/{data_name}"
-    corpus, queries, _ = GenericDataLoader(data_path).load(split="dev")
+    data_path = f"/home/gyuksel/master_thesis_ai/{data_name}"
+    corpus, queries, qrels = GenericDataLoader(data_path).load(split="dev")
     hostname = "localhost"
     index_name = os.path.split(data_name)[1]
-    logger.info("BM25 for {data_path} as index {index_name}")
+    logger.info(f"BM25 for {data_path} as index {index_name}")
     initialize = True
     model = BM25(index_name=index_name, hostname=hostname, initialize=initialize, timeout=10000)
-    # For the zeroshot ones, we retirve top 100 with BM25.
-    retriever = EvaluateRetrieval(model, k_values = [100])
-    results = retriever.retrieve(corpus, queries)
-    with open(f"bm25_scores/{index_name}/zeroshot_bm25_scores.json", "w") as f:
-        json.dump(results, f)
-
-
+    # Normally EvaluateGPL is used for evaluating dense models. So we need this hacky way of getting the BM25 model into EvaluateGPL
+    evaluator = EvaluateGPL(model = model, query=queries, corpus= corpus)
+    # A bit hacky way of getting BM25 into the EvaluateGPL
+    evaluator.retriever = EvaluateRetrieval(model, k_values=[1000])
+    # Init Writer, and write scores.
+    writer = RetriverWriter(evaluator, output_dir=f"bm25_scores/{index_name}", write_scores=True)
+    writer.evaluate_beir_format(qrels)
+    
 if __name__ == "__main__":
     main()
