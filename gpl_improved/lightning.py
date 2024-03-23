@@ -222,7 +222,9 @@ class GPLDistill(pl.LightningModule):
         if k_values is None:
             k_values = [10]
         retriver = EvaluateGPL(self.bi_retriver, self.test_queries, self.test_corpus)
-        return retriver.evaluate(self.test_qrels, k_values = k_values)
+        returns = retriver.evaluate(self.test_qrels, k_values = k_values)
+        self.eval_test()
+        return returns
     
     def configure_optimizers(self):
         optimizer_bi = AdamW(self.bi_retriver.parameters(), lr=2e-5, weight_decay = 0.01)

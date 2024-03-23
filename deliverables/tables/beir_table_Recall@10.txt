@@ -3,7 +3,7 @@
 \begin{tabular}{@{}|l|l|l|l|l|@{}}
 \toprule
 & BM25 & GPL Baseline & MSMARCO & MultiQA \\ \midrule
-NF-Corpus      & 16.6 & {} & 14.3    &  15.6   \\ \midrule
+NF-Corpus      & 16.6 & 13.0 & 14.3    &  15.6   \\ \midrule
     FIQA           & 32.4 & 33.5 & 33.8    &  50.3   \\ \midrule
     SCIDocs        & 17.4 & 14.0 & 14.5    &  16.4   \\ \midrule
     FEVER          & 81.4 & 87.7 & 88.1    &  59.5   \\ \midrule
@@ -12,9 +12,9 @@ NF-Corpus      & 16.6 & {} & 14.3    &  15.6   \\ \midrule
     TREC-COVID     & 1.9 & 1.8 & 1.7    &  1.8   \\ \midrule
     Climate-FEVER  & 23.2 & 24.4 & 27.3    &  19.8   \\ \midrule
     HotPot-QA      & 63.0 & 56.2 & 57.9    &  57.3   \\ \midrule
-    NQ             & 50.7 & {} & 69.5    &  72.9   \\ \midrule
+    NQ             & 50.7 & 65.3 & 69.5    &  72.9   \\ \midrule
     Quora          & 90.2 & 90.4 & 91.7    &  96.2   \\ \midrule
-    WebisTouche    & 21.2 & {} & 15.3    &  16.4   \\ \midrule
+    WebisTouche    & 21.2 & 14.2 & 15.3    &  16.4   \\ \midrule
     DBPedia-Entity & 20.9 & 20.7 & 22.5    &  21.1   \\ \midrule
     CQADupstack    & 41.3 & 37.9 & 40.9    &  55.0   \\ \bottomrule
     \end{tabular}

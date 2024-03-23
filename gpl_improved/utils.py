@@ -9,7 +9,18 @@ import torch
 import tqdm
 from beir import util
 import numpy as np
+from abc import ABC, abstractmethod
+from typing import Dict
 
+class BaseSearch(ABC):
+
+    @abstractmethod
+    def search(self, 
+               corpus: Dict[str, Dict[str, str]], 
+               queries: Dict[str, str], 
+               top_k: int, 
+               **kwargs) -> Dict[str, Dict[str, float]]:
+        pass
 
 def reweight_results(result_dense, result_bm25, weight = 0.1):
     for q_id in tqdm.tqdm(result_dense.keys()): 
@@ -19,7 +30,7 @@ def reweight_results(result_dense, result_bm25, weight = 0.1):
         result_bm25[q_id] = {key: dense_score[key] + (weight * bm25_score[key]) for key in bm25_score.keys()}
     return result_bm25
 
-def load_pretrained_bi_retriver(data_name: str, model_name: str, aug_strategy: str, checkpoint_name : str = "last"):
+def load_pretrained_bi_retriver(data_name: str, model_name: str = "gpl_average", aug_strategy: str = "no_aug", checkpoint_name : str = "last"):
     model = torch.load(
         f"/home/gyuksel/master_thesis_ai/saved_models/gpl_improved/{data_name}_{aug_strategy}_{model_name}/{checkpoint_name}.ckpt",
         map_location=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),

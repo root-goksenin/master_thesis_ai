@@ -38,11 +38,11 @@ logger = logging.getLogger(__name__)
 @click.option("--data_name", type = str)
 def main(data_name):
     data_path = f"/home/gyuksel/master_thesis_ai/{data_name}"
-    corpus, queries, qrels = GenericDataLoader(data_path).load(split="dev")
+    corpus, queries, qrels = GenericDataLoader(data_path).load(split="test")
     hostname = "localhost"
     index_name = os.path.split(data_name)[1]
     logger.info(f"BM25 for {data_path} as index {index_name}")
-    initialize = True
+    initialize = False
     model = BM25(index_name=index_name, hostname=hostname, initialize=initialize, timeout=10000)
     # Normally EvaluateGPL is used for evaluating dense models. So we need this hacky way of getting the BM25 model into EvaluateGPL
     evaluator = EvaluateGPL(model = model, query=queries, corpus= corpus)

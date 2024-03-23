@@ -1,0 +1,23 @@
+\begin{table}[]
+\centering
+\begin{tabular}{@{}l|l|l|l|l|l|l|@{}}
+\toprule
+& BM25 & GPL Baseline & GPL & MSMARCO & MultiQA \\ \midrule
+
+    Lifestyle      & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Technology     & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Writing        & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Recreation     & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Science        & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Pooled         & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Lifestyle      & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Technology     & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Writing        & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Recreation     & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Science        & 0 & 0 & {} & 0    &  0   \\ \midrule
+    Pooled         & 0 & 0 & {} & 0    &  0   \\ \midrule
+    \end{tabular}
+    \caption{Accuracy@5}
+    \label{tab:my-table}
+    \end{table}
+    

@@ -1,0 +1,24 @@
+\begin{table}[]
+\centering
+\begin{tabular}{@{}l|l|l|l|l|l|l|@{}}
+\toprule
+& BM25 & GPL Baseline & GPL & MSMARCO & MultiQA \\ \midrule
+NF-Corpus      & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    FIQA           & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    SCIDocs        & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    FEVER          & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    Arguana        & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    SCIFACT        & 77.3 & 0 & 0 & 0    &  0   \\ \midrule
+    TREC-COVID     & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    Climate-FEVER  & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    HotPot-QA      & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    NQ             & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    Quora          & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    WebisTouche    & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    DBPedia-Entity & 0 & 0 & 0 & 0    &  0   \\ \midrule
+    CQADupstack    & 0.0 & 0.0 & 0.0 & 0.0    &  0.0   \\ \bottomrule
+    \end{tabular}
+    \caption{Accuracy@5}
+    \label{tab:my-table}
+    \end{table}
+    
