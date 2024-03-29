@@ -32,28 +32,31 @@ class RetriverWriter:
             query_corpus_relativity, self.retriver.results(), self.k_values
         )
         mrr = EvaluateRetrieval.evaluate_custom(query_corpus_relativity, self.retriver.results(), self.k_values, metric="mrr")
-        ndcg, _map, recall, precision, mrr = self.calculate_metrics(ndcg, _map, recall, precision, mrr)
-        result_path = self.write_to_dir(ndcg, _map, recall, precision, mrr)
+        acc = EvaluateRetrieval.evaluate_custom(query_corpus_relativity, self.retriver.results(), self.k_values, metric="acc")
+        ndcg, _map, recall, precision, mrr = self.calculate_metrics(ndcg, _map, recall, precision, mrr, acc)
+        result_path = self.write_to_dir(ndcg, _map, recall, precision, mrr, acc)
         self.logger.info(f"Saved evaluation results to {result_path}")
         if self.write_scores:
             result_path = self.write_scores_to_dir()
             self.logger.info(f"Saved scores to {result_path}")        
 
-    def calculate_metrics(self, ndcg, _map, recall, precision, mrr):
+    def calculate_metrics(self, ndcg, _map, recall, precision, mrr, acc):
         ndcgs = [ndcg]
         _maps = [_map]
         recalls = [recall]
         precisions = [precision]
         mrrs = [mrr]
+        accs = [acc]
         # We have a database scheme for each query has ndcg values at different cut-off points.
         ndcg = {k: np.mean([score[k] for score in ndcgs]) for k in ndcg}
         _map = {k: np.mean([score[k] for score in _maps]) for k in _map}
         recall = {k: np.mean([score[k] for score in recalls]) for k in recall}
         precision = {k: np.mean([score[k] for score in precisions]) for k in precision}
         mrr = {k: np.mean([score[k] for score in mrrs]) for k in mrr}
+        acc = {k: np.mean([score[k] for score in accs]) for k in acc}
         return ndcg,_map,recall,precision,mrr
 
-    def write_to_dir(self, ndcg, _map, recall, precision, mrr):
+    def write_to_dir(self, ndcg, _map, recall, precision, mrr, acc):
         os.makedirs(self.output_dir, exist_ok=True)
         result_path = os.path.join(self.output_dir, "results.json")
         with open(result_path, "w") as f:
@@ -64,6 +67,7 @@ class RetriverWriter:
                     "recall": recall,
                     "precicion": precision,
                     "mrr": mrr,
+                    "acc" : acc
                 },
                 f,
                 indent=4,
@@ -211,7 +215,7 @@ class BM25Wrapper():
     self.logger = logging.getLogger(f"{__name__}.BM25Wrapper")
     self.results_ = None
     if self.bm25_reweight or eval_bm25:
-      with open(f"/home/gyuksel/master_thesis_ai/bm25_scores/{corpus_name}/bm25_scores.json", 'r') as f:
+      with open(f"/home/gyuksel/master_thesis_ai/bm25_scores/{corpus_name}/scores.json", 'r') as f:
         self.bm25_results = json.load(f)
         self.bm25_weight = bm25_weight
         # k_values needs to be the length of corpus if we want to reweight everything :)

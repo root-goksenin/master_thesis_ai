@@ -115,7 +115,7 @@ def train(path : str,
     trainer.fit(model=distill)
     
 
-@hydra.main(version_base = None)
+@hydra.main(version_base = None, config_path=".", config_name="config")
 def main(cfg: DictConfig) -> None:
     print(cfg.data.given_path)
     print(cfg.trainer.name)

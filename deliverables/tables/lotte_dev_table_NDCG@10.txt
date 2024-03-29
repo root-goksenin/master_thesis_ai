@@ -1,0 +1,23 @@
+\begin{table}[]
+\centering
+\begin{tabular}{@{}l|l|l|l|l|l|l|@{}}
+\toprule
+& BM25 & GPL Baseline & GPL & MSMARCO & MultiQA \\ \midrule
+
+    Lifestyle      & 34.2 & 40.1 & {} & 42.8    &  53.4   \\ \midrule
+    Technology     & 22.8 & 30.7 & {} & 34.3    &  44.6   \\ \midrule
+    Writing        & 39.6 & 52.8 & {} & 55.9    &  64.9   \\ \midrule
+    Recreation     & 38.6 & 42.5 & {} & 45.4    &  55.0   \\ \midrule
+    Science        & 39.5 & 42.4 & {} & 45.8    &  57.0   \\ \midrule
+    Pooled         & 31.5 & 38.6 & {} & 41.7    &  52.4   \\ \midrule
+    Lifestyle      & 22.0 & 25.7 & {} & 27.6    &  44.3   \\ \midrule
+    Technology     & 11.2 & 12.0 & {} & 13.5    &  28.1   \\ \midrule
+    Writing        & 40.5 & 41.7 & {} & 43.7    &  60.1   \\ \midrule
+    Recreation     & 28.0 & 30.1 & {} & 31.7    &  49.4   \\ \midrule
+    Science        & 24.9 & 25.5 & {} & 27.0    &  43.4   \\ \midrule
+    Pooled         & 22.7 & 25.0 & {} & 26.8    &  43.1   \\ \midrule
+    \end{tabular}
+    \caption{NDCG@10}
+    \label{tab:my-table}
+    \end{table}
+    

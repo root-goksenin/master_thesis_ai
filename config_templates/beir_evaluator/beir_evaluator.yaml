@@ -1,6 +1,6 @@
  
 beir_evaluator:
-  bm25_reweight : True 
+  bm25_reweight : False 
   bm25_weight : 2.0
   corpus_name : ${data.dataset_name}
   evaluate_bm25 : False

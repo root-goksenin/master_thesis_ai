@@ -1,5 +1,5 @@
 data:
   dataset_name: hotpotqa
-  output_folder: ./generated_improved
-  given_path: ./gpl_given_data/${data.dataset_name}
+  output_folder: ./lotte_gpl
+  given_path: ./lotte_beir_format/lifestyle_search_test
   prefix: "qgen"

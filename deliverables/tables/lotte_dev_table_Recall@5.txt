@@ -1,0 +1,23 @@
+\begin{table}[]
+\centering
+\begin{tabular}{@{}l|l|l|l|l|l|l|@{}}
+\toprule
+& BM25 & GPL Baseline & GPL & MSMARCO & MultiQA \\ \midrule
+
+    Lifestyle      & 31.7 & 37.4 & {} & 39.8    &  50.6   \\ \midrule
+    Technology     & 22.9 & 30.7 & {} & 34.0    &  43.4   \\ \midrule
+    Writing        & 39.4 & 53.0 & {} & 55.6    &  66.3   \\ \midrule
+    Recreation     & 36.5 & 40.3 & {} & 43.3    &  52.8   \\ \midrule
+    Science        & 39.8 & 42.3 & {} & 45.2    &  57.6   \\ \midrule
+    Pooled         & 30.6 & 37.8 & {} & 40.6    &  51.8   \\ \midrule
+    Lifestyle      & 16.3 & 19.0 & {} & 20.3    &  33.0   \\ \midrule
+    Technology     & 7.7 & 8.2 & {} & 9.4    &  19.4   \\ \midrule
+    Writing        & 30.9 & 31.7 & {} & 32.8    &  45.6   \\ \midrule
+    Recreation     & 22.1 & 23.4 & {} & 24.4    &  38.6   \\ \midrule
+    Science        & 19.2 & 19.8 & {} & 20.7    &  33.3   \\ \midrule
+    Pooled         & 17.3 & 18.8 & {} & 20.1    &  32.5   \\ \midrule
+    \end{tabular}
+    \caption{Recall@5}
+    \label{tab:my-table}
+    \end{table}
+    

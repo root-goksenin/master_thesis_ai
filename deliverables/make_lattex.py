@@ -4,7 +4,7 @@ from collections import namedtuple
 import click 
 output = namedtuple('Result', ['getter', 'updater'])
 
-models = ["GPL", "msmarco-distilbert-dot-v5", "multi-qa-distilbert-dot-v1", "BM25"]
+models = ["GPL Baseline", "GPL", "msmarco-distilbert-dot-v5", "multi-qa-distilbert-dot-v1", "BM25"]
 datasets = [
     x for x in os.listdir("../beir_data") if "cqadupstack" not in x
 ] + list(os.listdir("../beir_data/cqadupstack")) + list(os.listdir("../lotte_beir_format"))
@@ -12,8 +12,9 @@ datasets = [
 
 from_path_extract_index = lambda x, index: x.split("/")[index]
 from_path_extract_data_name = lambda x: from_path_extract_index(x, 2)
-from_path_extract_method_name = lambda x: from_path_extract_index(x, 3)
-composed = lambda x: (from_path_extract_method_name(x), from_path_extract_data_name(x))
+from_path_extract_method_name = lambda x: from_path_extract_index(x, -2)
+is_bm25 = lambda x: from_path_extract_index(x, 1) == "bm25_scores"
+composed = lambda x: (from_path_extract_method_name(x), from_path_extract_data_name(x), is_bm25(x))
 
 def find_results_json(base, new=[]):
     # Find scores.json recursively, and return the list of paths.
@@ -31,15 +32,20 @@ def return_eval_func(path, func: str):
         for k_, v_ in data[k].items():
             if k_ == func:
                 return round(v_ * 100,1)
+    return 0
 
 def populate_results(funcs, eval_functions):
     result_dict = {k: {k_ : {val: {} for val in eval_functions} for k_ in datasets} for k in models}
     def populate(results):
         nonlocal result_dict
         for result in results:
-            method,data = funcs(result)
+            method,data, isbm25 = funcs(result)
             for func in eval_functions:
-                result_dict[method if method != "results.json" else "BM25"][data][func] = return_eval_func(result, func)
+                if method == "msmarco-distilbert-margin-mse":
+                    method = "GPL Baseline"
+                elif "distilbert-gpl" in method:
+                    method = "GPL"
+                result_dict[method if not isbm25 else "BM25"][method if isbm25 else data][func] = return_eval_func(result, func)
     def get_result_dict():
         return result_dict
 
