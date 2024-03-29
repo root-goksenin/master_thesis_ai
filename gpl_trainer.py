@@ -53,8 +53,8 @@ def train(path : str,
     
     trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, 
                          deterministic = True, callbacks = [checkpoint_callback],
-                         limit_train_batches = remine_hard_negatives_every // 5,
-                         reload_dataloaders_every_n_epochs = 5)
+                         limit_train_batches = remine_hard_negatives_every // 100,
+                         reload_dataloaders_every_n_epochs = 100)
     seed_everything(seed, workers=True)
     # Train the distillation
     # Batch size is 32.    
