@@ -38,7 +38,8 @@ class NegativeMiner(object):
         retriever_score_functions=["none", "cos_sim", "cos_sim"],
         nneg=50,
         use_train_qrels: bool = False,
-        query_augment_mod: QueryAugmentMod = QueryAugmentMod.UsePast
+        query_augment_mod: QueryAugmentMod = QueryAugmentMod.UsePast,
+        out_path = "hard-negatives.jsonl"
     ):
         self.logger = logging.getLogger(__name__ + ".NegativeMiner")
         if use_train_qrels:
@@ -50,7 +51,7 @@ class NegativeMiner(object):
             self.corpus, self.gen_queries, self.gen_qrels = GenericDataLoader(
                 generated_path, prefix=prefix
             ).load(split="train")
-        self.output_path = os.path.join(generated_path, "hard-negatives.jsonl")
+        self.output_path = os.path.join(generated_path, out_path)
         self.retrievers = retrievers
         self.retriever_score_functions = retriever_score_functions
         if "bm25" in retrievers:
@@ -73,15 +74,14 @@ class NegativeMiner(object):
     def _get_doc(self, did):
         return " ".join([self.corpus[did]["title"], self.corpus[did]["text"]])
 
-    def _mine_sbert(self, model_name, score_function):
-        self.logger.info(f"Mining with {model_name}")
+    def _mine_sbert(self, model_name, score_function, pre_trained = False):
         assert score_function in ["dot", "cos_sim"]
         normalize_embeddings = False
         if score_function == "cos_sim":
             normalize_embeddings = True
 
         result = {}
-        sbert = SentenceTransformer(model_name)
+        sbert = model_name if pre_trained else SentenceTransformer(model_name)
         docs = list(map(self._get_doc, self.corpus.keys()))
         dids = np.array(list(self.corpus.keys()))
         doc_embs = sbert.encode(
@@ -176,7 +176,7 @@ class NegativeMiner(object):
             if retriever == "bm25":
                 hard_negatives[retriever] = self._mine_bm25()
             else:
-                hard_negatives[retriever] = self._mine_sbert(retriever, score_function)
+                hard_negatives[retriever] = self._mine_sbert(model_name = retriever, score_function = score_function)
 
         self.logger.info("Combining all the data")
         result_jsonl = []
@@ -193,3 +193,25 @@ class NegativeMiner(object):
             for line in result_jsonl:
                 f.write(json.dumps(line) + "\n")
         self.logger.info("Done")
+    
+    def run_with_pretrained(self, model, score_function):
+        hard_negatives = {}
+        # Hacky to get it, but works. 
+        hard_negatives["pre_trained"] = self._mine_sbert(model_name = model, score_function= score_function, pre_trained = True)
+
+        self.logger.info("Combining all the data")
+        result_jsonl = []
+        for qid, pos_dids in tqdm.tqdm(self.gen_qrels.items()):
+            line = {
+                "qid": qid,
+                "pos": list(pos_dids.keys()),
+                "neg": {k: v[qid] for k, v in hard_negatives.items()},
+            }
+            result_jsonl.append(line)
+
+        self.logger.info(f"Saving data to {self.output_path}")
+        with open(self.output_path, "w") as f:
+            for line in result_jsonl:
+                f.write(json.dumps(line) + "\n")
+        self.logger.info("Done")
+    

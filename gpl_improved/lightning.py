@@ -7,8 +7,9 @@ from torch.optim import AdamW
 import os 
 from typing import List
 from gpl_improved.trainer.loss import MarginDistillationLoss
+from gpl_improved.hard_negative_miner import HardNegativeMiner, HardNegativeWriter
 from gpl_improved.trainer.hard_negative_dataset import HardNegativeDataset, hard_negative_collate_fn
-from gpl_improved.utils import load_sbert, batch_to_device
+from gpl_improved.utils import load_sbert, batch_to_device, SCORE
 from gpl_improved.trainer.RetriverWriter import EvaluateGPL, RetriverWriter, BM25Wrapper
 from sentence_transformers.readers.InputExample import InputExample
 import torch
@@ -45,12 +46,14 @@ def normalized_teacher_labels(labels):
 
 class GPLDistill(pl.LightningModule):
     def __init__(self, cross_encoder, bi_retriver, path, 
-                 eval_every = 1000,  batch_size: int = 32, warmup_steps = 1000, t_total = 140000, amp_training = True,
+                 eval_every = 1000,  remine_hard_negatives_every = 140000, batch_size: int = 32, warmup_steps = 1000, t_total = 140000, amp_training = True,
                  evaluate_baseline = True, max_seq_length = 350, reducer = "mean", query_per_passage = 3, augmented_mod = QueryAugmentMod.None_, 
-                 save_name = "", prefix = "", bm25_reweight = True, bm25_weight = 2,  corpus_name = "fiqa"):
+                 save_name = "", prefix = "", bm25_reweight = True, bm25_weight = 2,  corpus_name = "fiqa",
+                 negatives_per_query = 50):
         super().__init__()
         self.save_hyperparameters()
         self.logger_ = logging.getLogger(f".GPLDistill{__name__}")
+        self.logger_.info(f"Remining Hard Negatives with the corpus adapted model every {remine_hard_negatives_every}")
         self.logger_.info(f"Evaluating the model every {eval_every} step")
         self.logger_.info(f"Using Cross Encoders {cross_encoder}")
         self.logger_.info(f"Adapting bi_retriver {bi_retriver}")
@@ -62,6 +65,14 @@ class GPLDistill(pl.LightningModule):
         self.logger_.info(f"Using maximum sequence length of {max_seq_length}")
         self.logger_.info(f"Using BM25 reweighting {bm25_reweight}")
 
+        # When we remine hard negatives every X step, we need to pass a new train dataloader
+        # The new train dataloader can be created by the jsonl files of the hard negatives.
+        # We can get the hard negatives with the hard negative miner of the self module.
+        # This way it generates a hard negative dataset, and then we can put it in the beir format.
+        self.remine_hard_negatives_every = remine_hard_negatives_every
+        self.negatives_per_query = negatives_per_query
+        
+        # 
         self.bm25_reweight = bm25_reweight
         self.bm25_weight = bm25_weight
         self.corpus_name = corpus_name
@@ -135,15 +146,13 @@ class GPLDistill(pl.LightningModule):
         
         # First, do the train and test loggings.
         # For this we evaluate the test set and train set.
-        self.logger_.info(f"{self.global_step}")
-
         if (self.global_step) % self.eval_every == 0:
-        #   try:
-        #     self.logger_.info(f"Encoding training with generated qrels corpus to get ndcg_train at step {self.global_step}")
-        #     ndcgs_train = self.ndcg_train(k_values = [10,])
-        #     self.log("ndcg_train", ndcgs_train["NDCG@10"])
-        #   except RuntimeError:
-        #     self.log("ndcg_train", 0)
+          try:
+            self.logger_.info(f"Encoding training with generated qrels corpus to get ndcg_train at step {self.global_step}")
+            ndcgs_train = self.ndcg_train(k_values = [10,])
+            self.log("ndcg_train", ndcgs_train["NDCG@10"])
+          except RuntimeError:
+            self.log("ndcg_train", 0)
           try:
             self.logger_.info(f"Encoding Testing corpus to get ndcg_test at step {self.global_step}")
             ndcgs_test = self.ndcg_test(k_values = [10,])        
@@ -195,7 +204,6 @@ class GPLDistill(pl.LightningModule):
 
         bi_optimizer.zero_grad()
         cross_optimizer.zero_grad()
-        self.logger_.info(f"Stepped")
 
         if not skip_scheduler:
             bi_scheduler.step()
@@ -246,9 +254,17 @@ class GPLDistill(pl.LightningModule):
     
     
     def train_dataloader(self):
-        hard_negative_dataset = HardNegativeDataset(
-        os.path.join(self.path, "hard-negatives.jsonl"), self.train_queries, self.train_corpus
-        )
+        # If we wanna mine the hard negatives every_x_step, and we know that it is not the starting step then we mine hard negatives.
+        # It will always have "hard_negatives_remined.jsonl"
+        if ((self.global_step) % self.remine_hard_negatives_every == 0) and (self.global_step != 0):
+            self.mine_hard_negatives()
+            hard_negative_dataset = HardNegativeDataset(
+            os.path.join(self.path, "hard-negatives-remined.jsonl"), self.train_queries, self.train_corpus
+            )
+        elif self.global_step == 0:
+            hard_negative_dataset = HardNegativeDataset(
+            os.path.join(self.path, "hard-negatives.jsonl"), self.train_queries, self.train_corpus
+            )
         hard_negative_dataloader = DataLoader(
         hard_negative_dataset, shuffle=True, batch_size=self.batch_size, drop_last=True,
         )
@@ -306,6 +322,13 @@ class GPLDistill(pl.LightningModule):
         Tokenizes the texts
         """
         return self.bi_retriver._first_module().tokenize(texts)
+    
+    def mine_hard_negatives(self):
+        # Self.biretriver is SentenceTransformer model!
+        miner = HardNegativeWriter(negatives_per_query=self.negatives_per_query, path_to_data= self.path, gpl_data_prefix=self.prefix, query_augment_mod= self.augment_mod)
+        miner.generate([self.bi_retriver], [SCORE.DOT], use_train_qrels = False,
+                       remine = True)
+
 
     def smart_batching_collate(self, batch):
         """

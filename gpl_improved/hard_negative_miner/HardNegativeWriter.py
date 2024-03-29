@@ -16,20 +16,34 @@ class HardNegativeWriter:
     self.negatives_per_query = negatives_per_query
     self.logger = logging.getLogger(__name__ + ".HardNegativeWriter")
     self.mod = query_augment_mod
-  def generate(self, models: List[str], score : List[SCORE], use_train_qrels: bool = False):
+  def generate(self, models: List[str], score : List[SCORE], use_train_qrels: bool = False, remine = False):
     #### Hard-negative mining ####
     #### This will be skipped if there is an existing `hard-negatives.jsonl` file under `path_to_generated_data` ####
-    if "hard-negatives.jsonl" in os.listdir(self.path_to_data):
-        self.logger.info("Using exisiting hard-negative data")
+    if remine:
+      self.logger.info("No hard-negative data found. Now mining it")
+      miner = NegativeMiner(
+          self.path_to_data,
+          self.gpl_data_prefix,
+          retrievers=models,
+          retriever_score_functions= list(map(lambda x: x.value, score)),
+          nneg=self.negatives_per_query,
+          use_train_qrels=use_train_qrels,
+          query_augment_mod = self.mod,
+          out_path = "hard-negatives-remined.jsonl" 
+      )
+      miner.run_with_pretrained(models[0], score[0].value)
+    elif ("hard-negatives.jsonl" in os.listdir(self.path_to_data)): 
+      self.logger.info("Using exisiting hard-negative data")
     else:
-        self.logger.info("No hard-negative data found. Now mining it")
-        miner = NegativeMiner(
-            self.path_to_data,
-            self.gpl_data_prefix,
-            retrievers=models,
-            retriever_score_functions= list(map(lambda x: x.value, score)),
-            nneg=self.negatives_per_query,
-            use_train_qrels=use_train_qrels,
-            query_augment_mod = self.mod
-        )
-        miner.run()
+      self.logger.info("No hard-negative data found. Now mining it")
+      miner = NegativeMiner(
+          self.path_to_data,
+          self.gpl_data_prefix,
+          retrievers=models,
+          retriever_score_functions= list(map(lambda x: x.value, score)),
+          nneg=self.negatives_per_query,
+          use_train_qrels=use_train_qrels,
+          query_augment_mod = self.mod,
+          out_path = "hard-negatives.jsonl"
+      )
+      miner.run()

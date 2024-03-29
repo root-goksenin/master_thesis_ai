@@ -5,7 +5,6 @@ import logging
 import torch
 from typing import Dict
 import heapq
-import psutil
 import gc 
 
 logger = logging.getLogger(__name__)
@@ -109,7 +108,6 @@ class DenseRetrievalExactSearch(BaseSearch):
                             heapq.heappushpop(result_heaps[query_id], (score, corpus_id))
             del cos_scores_top_k_values,cos_scores_top_k_idx
             gc.collect()
-            logging.info(f"Current memory usage is : {psutil.virtual_memory().percent}")            
 
         for qid, value in result_heaps.items():
             for score, corpus_id in value:

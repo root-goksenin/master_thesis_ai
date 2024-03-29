@@ -4,11 +4,12 @@ trainer:
   bi_retriver_name: gpl
   reducer : average
   t_total: 140000
-  eval_every: 10000
+  eval_every: 25000
+  remine_hard_negatives_every: 25000
   batch_size: 32
   warmup_steps: 1000
   amp_training: True
   evaluate_baseline: False
   max_seq_length: 350
   seed: 1
-  name: ${query_writer.augmented}_${trainer.bi_retriver_name}_${trainer.reducer}
+  name: ${trainer.remine_hard_negatives_every}_${trainer.bi_retriver_name}_${trainer.reducer}

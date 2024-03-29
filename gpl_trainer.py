@@ -23,6 +23,7 @@ def train(path : str,
              bi_retriver: str,
              t_total: int,
              eval_every: int,
+             remine_hard_negatives_every:int,
              batch_size: int,
              warmup_steps: int,
              amp_training : bool,
@@ -43,14 +44,22 @@ def train(path : str,
     checkpoint_callback = ModelCheckpoint(dirpath=f'./saved_models/gpl_improved/{corpus_name}_{name}',
                                           filename = '{step}',
                                           verbose = True,
-                                          every_n_epochs = 2,
+                                          every_n_train_steps = eval_every,
                                           save_last = True)
     
-    trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, deterministic = True, callbacks = [checkpoint_callback])
+    # Each epoch takes remine_hard_negatives_every step.
+    # Max step is t_total
+    # Each epoch we reload dataloaders [mine the hard negatives again]
+    
+    trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, 
+                         deterministic = True, callbacks = [checkpoint_callback],
+                         limit_train_batches = remine_hard_negatives_every // 5,
+                         reload_dataloaders_every_n_epochs = 5)
     seed_everything(seed, workers=True)
     # Train the distillation
     # Batch size is 32.    
     ## We can have multiple cross-encoders to distill the knowledge from.
+    # Add reload_dataloaders_every_n_epochs
     distill = GPLDistill(cross_encoder= cross_encoders,
                          bi_retriver = bi_retriver, 
                          path = path,
@@ -58,6 +67,7 @@ def train(path : str,
                          batch_size = batch_size, 
                          evaluate_baseline=evaluate_baseline,
                          eval_every=eval_every,
+                         remine_hard_negatives_every=remine_hard_negatives_every,
                          warmup_steps=warmup_steps,
                          max_seq_length=max_seq_length,
                          query_per_passage=q_per_passage,
@@ -79,12 +89,12 @@ def main(cfg: DictConfig) -> None:
         path = dataset(dataset_name=BEIR_DATASETS(cfg.data.dataset_name), output_folder=cfg.data.output_folder)
     else:
         path = cfg.data.given_path
-        
     train(path = path, 
         cross_encoders = cfg.trainer.cross_encoders, 
         bi_retriver = cfg.trainer.bi_retriver, 
         t_total = cfg.trainer.t_total, 
-        eval_every = cfg.trainer.eval_every, 
+        eval_every = cfg.trainer.eval_every,
+        remine_hard_negatives_every=cfg.trainer.remine_hard_negatives_every, 
         batch_size = cfg.trainer.batch_size, 
         warmup_steps = cfg.trainer.warmup_steps, 
         amp_training = cfg.trainer.amp_training,
