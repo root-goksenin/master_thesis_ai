@@ -194,7 +194,7 @@ class NegativeMiner(object):
                 f.write(json.dumps(line) + "\n")
         self.logger.info("Done")
     
-    def run_with_pretrained(self, model, score_function):
+    def run_with_pretrained(self, model, score_function, out_path):
         hard_negatives = {}
         # Hacky to get it, but works. 
         hard_negatives["pre_trained"] = self._mine_sbert(model_name = model, score_function= score_function, pre_trained = True)
@@ -209,8 +209,8 @@ class NegativeMiner(object):
             }
             result_jsonl.append(line)
 
-        self.logger.info(f"Saving data to {self.output_path}")
-        with open(self.output_path, "w") as f:
+        self.logger.info(f"Saving data to {out_path}")
+        with open(out_path, "w") as f:
             for line in result_jsonl:
                 f.write(json.dumps(line) + "\n")
         self.logger.info("Done")
