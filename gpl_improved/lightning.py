@@ -289,9 +289,7 @@ class GPLDistill(pl.LightningModule):
                 self.path,
                 f"{self.base_model}{arg1}",
                 f"test_step_{self.global_step}",
-                f"nr_queries_per_passage_{self.query_per_passage}",
-                f"augmented_mod_{self.augment_mod}_{self.save_name}",
-                f"bm25_reweight={self.bm25_reweight}"
+                f"remine_every_{self.remine_hard_negatives_every}"
             ),
         )
         writer.evaluate_query_based(qrels)

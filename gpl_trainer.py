@@ -39,18 +39,24 @@ def train(path : str,
              corpus_name: str,
              bm25_weight: int,
              ):
-    logger = TensorBoardLogger("tb_logs", name=f"{corpus_name}_{name}")
-    # 140,000 steps is the default.
+    logger = TensorBoardLogger("tb_logs_extension", name=f"{corpus_name}_{name}")
     checkpoint_callback = ModelCheckpoint(dirpath=f'./saved_models/gpl_improved/{corpus_name}_{name}',
-                                          filename = '{step}',
+                                          filename='{epoch}-{step:.2f}',
                                           verbose = True,
                                           every_n_train_steps = eval_every,
+                                          save_top_k = -1,
+                                          every_n_epochs = None,
                                           save_last = True)
     
     # Each epoch takes remine_hard_negatives_every step.
+    # Then if we divide this by 100, lets say our hard negatives are 25000
+    # Then each epoch will have 250 steps.
+    # After 100 epochs, we will reload the train dataloaders.
+    
+    
     # Max step is t_total
     # Each epoch we reload dataloaders [mine the hard negatives again]
-    
+    # 
     trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, 
                          deterministic = True, callbacks = [checkpoint_callback],
                          limit_train_batches = remine_hard_negatives_every // 100,
