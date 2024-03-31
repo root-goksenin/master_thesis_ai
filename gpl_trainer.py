@@ -40,7 +40,7 @@ def train(path : str,
              bm25_weight: int,
              ):
     
-    # assert remine_hard_negatives_every % 1000 == 0, "Remine Hard Negatives Every needs to be divisible by 1000"
+    assert remine_hard_negatives_every % 1000 == 0, "Remine Hard Negatives Every needs to be divisible by 1000"
     
     logger = TensorBoardLogger("tb_logs_extension", name=f"{corpus_name}_{name}")
     checkpoint_callback = ModelCheckpoint(dirpath=f'./saved_models/gpl_improved/{corpus_name}_{name}',
