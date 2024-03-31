@@ -110,6 +110,7 @@ class GPLDistill(pl.LightningModule):
         self.bi_retriver.train()
         
         self.logger_.info(vars(self))
+        
 
     def setup(self,stage):
         corpus, queries, qrels = GenericDataLoader(self.path, prefix=self.prefix).load(split="train")
@@ -165,7 +166,7 @@ class GPLDistill(pl.LightningModule):
         bi_optimizer, cross_optimizer, = self.optimizers()
         bi_scheduler, cross_scheduler = self.lr_schedulers()
         _ , (query, pos, neg) = batch
-
+        
         # We do not need teacher gradients.
         with torch.no_grad():
             teacher_labels = torch.zeros((self.batch_size, len(self.teacher_models)),device = self.device)
@@ -253,30 +254,21 @@ class GPLDistill(pl.LightningModule):
         self.logger_.info("Using AdamW optimizer for cross encoder with weight decay of 0.01, and learning rate of 2e-5")
         return [optimizer_bi, optimizer_cross], [scheduler_bi, scheduler_cross]
     
-
-    def seed_worker(self, worker_id):
-        worker_seed = torch.initial_seed() % 2**32
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-
-        self.g = torch.Generator()
-        self.g.manual_seed(0)
     def train_dataloader(self):
         # If we wanna mine the hard negatives every_x_step, and we know that it is not the starting step then we mine hard negatives.
         # It will always have "hard_negatives_remined.jsonl"
         if ((self.global_step) % self.remine_hard_negatives_every == 0) and (self.global_step != 0):
             self.mine_hard_negatives()
             hard_negative_dataset = HardNegativeDataset(
-            os.path.join(self.path, self.remine_path), self.train_queries, self.train_corpus
+                os.path.join(self.path, self.remine_path), self.train_queries, self.train_corpus
             )
         elif self.global_step == 0:
             hard_negative_dataset = HardNegativeDataset(
-            os.path.join(self.path, "hard-negatives.jsonl"), self.train_queries, self.train_corpus
-            )
+                os.path.join(self.path, "hard-negatives.jsonl"), self.train_queries, self.train_corpus)
+        
         hard_negative_dataloader = DataLoader(
             hard_negative_dataset, shuffle=True, batch_size=self.batch_size, drop_last=True,
-            worker_init_fn=self.seed_worker,
-            generator=self.g
+            num_workers = 18
         )
         hard_negative_dataloader.collate_fn = hard_negative_collate_fn
         return hard_negative_dataloader
@@ -336,7 +328,7 @@ class GPLDistill(pl.LightningModule):
         # We give different name to the hard negatives as multiple instances of the same trainer may run on the same dataset.
         miner = HardNegativeWriter(negatives_per_query=self.negatives_per_query, path_to_data= self.path, gpl_data_prefix=self.prefix, query_augment_mod= self.augment_mod)
         miner.generate([self.bi_retriver], [SCORE.DOT], use_train_qrels = False,
-                        remine = True, out_path_for_remine = self.remine_path)
+                        remine = True, out_path_for_remine = os.path.join(self.path, self.remine_path))
 
 
     def smart_batching_collate(self, batch):

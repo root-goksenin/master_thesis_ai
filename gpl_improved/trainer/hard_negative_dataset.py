@@ -8,7 +8,7 @@ import random
 import linecache
 from typing import Dict
 import logging
-
+import random 
 
 
 def concat_title_and_body(did: str, corpus: Dict[str, Dict[str, str]], sep: str):
@@ -72,12 +72,14 @@ class HardNegativeDataset(Dataset):
         # scores = {item['pid']: item['ce-score'] for item in query_dict['pos']}
 
         # Get the hard negatives
-        neg_pids = set()
+        neg_pids = list()
+        neg_pids_set = set()
         for system_name, system_negs in query_dict["neg"].items():
             for pid in system_negs:
 
-                if pid not in neg_pids:
-                    neg_pids.add(pid)
+                if pid not in neg_pids_set:
+                    neg_pids.append(pid)
+                    neg_pids_set.add(pid)
                     # scores[pid] = item['ce-score']
 
         if len(pos_pids) > 0 and len(neg_pids) > 0:
@@ -86,7 +88,8 @@ class HardNegativeDataset(Dataset):
             pos_pid = random.choice(pos_pids)
             pos_text = concat_title_and_body(pos_pid, self.corpus, self.sep)
 
-            neg_pid = random.choice(list(neg_pids))
+            # Choose a random negative pid here.
+            neg_pid = random.choice(neg_pids)
             neg_text = concat_title_and_body(neg_pid, self.corpus, self.sep)
 
             return (query_dict["qid"], pos_pid, neg_pid), (

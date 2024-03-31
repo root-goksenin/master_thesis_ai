@@ -29,7 +29,7 @@ class HardNegativeWriter:
           nneg=self.negatives_per_query,
           use_train_qrels=use_train_qrels,
           query_augment_mod = self.mod,
-          out_path = None, 
+          out_path = "foo", 
       )
       miner.run_with_pretrained(models[0], score[0].value, out_path = out_path_for_remine)
     elif ("hard-negatives.jsonl" in os.listdir(self.path_to_data)): 

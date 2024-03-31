@@ -11,7 +11,7 @@ from typing import List
 import hydra
 from omegaconf import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
-
+import random
 
 
 def dataset(dataset_name: BEIR_DATASETS,
@@ -39,6 +39,9 @@ def train(path : str,
              corpus_name: str,
              bm25_weight: int,
              ):
+    
+    # assert remine_hard_negatives_every % 1000 == 0, "Remine Hard Negatives Every needs to be divisible by 1000"
+    
     logger = TensorBoardLogger("tb_logs_extension", name=f"{corpus_name}_{name}")
     checkpoint_callback = ModelCheckpoint(dirpath=f'./saved_models/gpl_improved/{corpus_name}_{name}',
                                           filename='{epoch}-{step:.2f}',
@@ -54,14 +57,19 @@ def train(path : str,
     # After 100 epochs, we will reload the train dataloaders.
     
     
+    seed_everything(seed, workers = True)
     # Max step is t_total
     # Each epoch we reload dataloaders [mine the hard negatives again]
-    # 
+        
+    # We can also fit multiple times...
+    # We have 1000 steps per epoch,
+    # We remine hard negatives every X epoch.
+    # This makes sure that we have reporducable runs.
     trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, 
                          deterministic = True, callbacks = [checkpoint_callback],
-                         limit_train_batches = remine_hard_negatives_every // 100,
-                         reload_dataloaders_every_n_epochs = 100)
-    seed_everything(seed, workers=True)
+                         limit_train_batches = 1000,
+                         reload_dataloaders_every_n_epochs = remine_hard_negatives_every // 1000)
+    
     # Train the distillation
     # Batch size is 32.    
     ## We can have multiple cross-encoders to distill the knowledge from.
@@ -85,6 +93,8 @@ def train(path : str,
                          corpus_name = corpus_name,
                          bm25_weight= bm25_weight,
                          )
+
+
     trainer.fit(model=distill)
     
     
