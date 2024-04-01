@@ -40,9 +40,13 @@ def train(path : str,
              bm25_weight: int,
              ):
     
-    assert remine_hard_negatives_every % 1000 == 0, "Remine Hard Negatives Every needs to be divisible by 1000"
+    # assert remine_hard_negatives_every % 1000 == 0, "Remine Hard Negatives Every needs to be divisible by 1000"
     
     logger = TensorBoardLogger("tb_logs_extension", name=f"{corpus_name}_{name}")
+    
+    
+    # We save the model every time we evalaute the performance
+    # Also we save the last one.
     checkpoint_callback = ModelCheckpoint(dirpath=f'./saved_models/gpl_improved/{corpus_name}_{name}',
                                           filename='{epoch}-{step:.2f}',
                                           verbose = True,
@@ -51,11 +55,6 @@ def train(path : str,
                                           every_n_epochs = None,
                                           save_last = True)
     
-    # Each epoch takes remine_hard_negatives_every step.
-    # Then if we divide this by 100, lets say our hard negatives are 25000
-    # Then each epoch will have 250 steps.
-    # After 100 epochs, we will reload the train dataloaders.
-    
     
     seed_everything(seed, workers = True)
     # Max step is t_total
@@ -63,13 +62,14 @@ def train(path : str,
         
     # We can also fit multiple times...
     # We have 1000 steps per epoch,
-    # We remine hard negatives every X epoch.
+    # We remine hard negatives every X epoch where X is remine_hard_negatives_every // 1000
     # This makes sure that we have reporducable runs.
     trainer = pl.Trainer(logger = logger, gpus = 1, max_epochs = -1, max_steps = t_total, 
                          deterministic = True, callbacks = [checkpoint_callback],
                          limit_train_batches = 1000,
-                         reload_dataloaders_every_n_epochs = remine_hard_negatives_every // 1000)
-    
+                         reload_dataloaders_every_n_epochs = remine_hard_negatives_every // 1000,
+                         log_every_n_steps=10)
+    print(f"Remining hard negatives every : {remine_hard_negatives_every // 100} epochs")
     # Train the distillation
     # Batch size is 32.    
     ## We can have multiple cross-encoders to distill the knowledge from.

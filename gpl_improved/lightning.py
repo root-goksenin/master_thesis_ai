@@ -149,18 +149,18 @@ class GPLDistill(pl.LightningModule):
         # First, do the train and test loggings.
         # For this we evaluate the test set and train set.
         if (self.global_step) % self.eval_every == 0:
-          try:
-            self.logger_.info(f"Encoding training with generated qrels corpus to get ndcg_train at step {self.global_step}")
-            ndcgs_train = self.ndcg_train(k_values = [10,])
-            self.log("ndcg_train", ndcgs_train["NDCG@10"])
-          except RuntimeError:
-            self.log("ndcg_train", 0)
+        #   try:
+        #     self.logger_.info(f"Encoding training with generated qrels corpus to get ndcg_train at step {self.global_step}")
+        #     ndcgs_train = self.ndcg_train(k_values = [10,])
+        #     self.log("ndcg_train", ndcgs_train["NDCG@10"], on_step = True)
+        #   except RuntimeError:
+        #     self.log("ndcg_train", 0, on_step = True)
           try:
             self.logger_.info(f"Encoding Testing corpus to get ndcg_test at step {self.global_step}")
             ndcgs_test = self.ndcg_test(k_values = [10,])        
-            self.log("ndcg_test", ndcgs_test["NDCG@10"])
+            self.log("ndcg_test", ndcgs_test["NDCG@10"], on_step = True)
           except RuntimeError:
-            self.log("ndcg_test", 0)
+            self.log("ndcg_test", 0, on_step = True)
         
         skip_scheduler = False
         bi_optimizer, cross_optimizer, = self.optimizers()
