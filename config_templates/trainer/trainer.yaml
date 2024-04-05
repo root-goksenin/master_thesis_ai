@@ -10,6 +10,7 @@ trainer:
   warmup_steps: 1000
   amp_training: True
   evaluate_baseline: False
+  load_test : True
   max_seq_length: 350
   seed: 1
   name: ${trainer.remine_hard_negatives_every}_${trainer.bi_retriver_name}_${trainer.reducer}

@@ -50,7 +50,7 @@ class GPLDistill(pl.LightningModule):
                  eval_every = 1000,  remine_hard_negatives_every = 140000, batch_size: int = 32, warmup_steps = 1000, t_total = 140000, amp_training = True,
                  evaluate_baseline = True, max_seq_length = 350, reducer = "mean", query_per_passage = 3, augmented_mod = QueryAugmentMod.None_, 
                  save_name = "", prefix = "", bm25_reweight = True, bm25_weight = 2,  corpus_name = "fiqa",
-                 negatives_per_query = 50):
+                 negatives_per_query = 50, load_test = True):
         super().__init__()
         self.save_hyperparameters()
         self.logger_ = logging.getLogger(f".GPLDistill{__name__}")
@@ -66,6 +66,7 @@ class GPLDistill(pl.LightningModule):
         self.logger_.info(f"Using maximum sequence length of {max_seq_length}")
         self.logger_.info(f"Using BM25 reweighting {bm25_reweight}")
 
+        self.load_test = load_test
         # When we remine hard negatives every X step, we need to pass a new train dataloader
         # The new train dataloader can be created by the jsonl files of the hard negatives.
         # We can get the hard negatives with the hard negative miner of the self module.
@@ -114,22 +115,25 @@ class GPLDistill(pl.LightningModule):
 
     def setup(self,stage):
         corpus, queries, qrels = GenericDataLoader(self.path, prefix=self.prefix).load(split="train")
-        corpus_test, queries_test, qrels_test = GenericDataLoader(self.path).load(split="test")
-
         self.train_queries = queries
         self.train_corpus = corpus 
         self.train_qrels = qrels
-        self.test_queries = queries_test
-        self.test_corpus = corpus_test
-        self.test_qrels = qrels_test
-        if self.evaluate_baseline:
-            self.eval_test()
+        
+        if self.load_test:
+            corpus_test, queries_test, qrels_test = GenericDataLoader(self.path).load(split="test")
+            self.test_queries = queries_test
+            self.test_corpus = corpus_test
+            self.test_qrels = qrels_test
+            if self.evaluate_baseline:
+                self.eval_test()
+            
         
     def on_train_end(self):
         '''
         When training finishes, evaluate test set.
         '''
-        self.eval_test()
+        if self.load_test:
+            self.eval_test()
         
         
     def add_teacher_statistics(self, labels):
@@ -155,12 +159,13 @@ class GPLDistill(pl.LightningModule):
         #     self.log("ndcg_train", ndcgs_train["NDCG@10"], on_step = True)
         #   except RuntimeError:
         #     self.log("ndcg_train", 0, on_step = True)
-          try:
-            self.logger_.info(f"Encoding Testing corpus to get ndcg_test at step {self.global_step}")
-            ndcgs_test = self.ndcg_test(k_values = [10,])        
-            self.log("ndcg_test", ndcgs_test["NDCG@10"], on_step = True)
-          except RuntimeError:
-            self.log("ndcg_test", 0, on_step = True)
+          if self.load_test:
+            try:
+                self.logger_.info(f"Encoding Testing corpus to get ndcg_test at step {self.global_step}")
+                ndcgs_test = self.ndcg_test(k_values = [10,])        
+                self.log("ndcg_test", ndcgs_test["NDCG@10"], on_step = True)
+            except RuntimeError:
+                self.log("ndcg_test", 0, on_step = True)
         
         skip_scheduler = False
         bi_optimizer, cross_optimizer, = self.optimizers()
@@ -262,6 +267,7 @@ class GPLDistill(pl.LightningModule):
             hard_negative_dataset = HardNegativeDataset(
                 os.path.join(self.path, self.remine_path), self.train_queries, self.train_corpus
             )
+            self.counter += 1
         elif self.global_step == 0:
             hard_negative_dataset = HardNegativeDataset(
                 os.path.join(self.path, "hard-negatives.jsonl"), self.train_queries, self.train_corpus)

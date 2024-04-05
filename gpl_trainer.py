@@ -38,6 +38,7 @@ def train(path : str,
              bm25_reweight: bool,
              corpus_name: str,
              bm25_weight: int,
+             load_test : bool,
              ):
     
     # assert remine_hard_negatives_every % 1000 == 0, "Remine Hard Negatives Every needs to be divisible by 1000"
@@ -92,6 +93,7 @@ def train(path : str,
                          bm25_reweight= bm25_reweight,
                          corpus_name = corpus_name,
                          bm25_weight= bm25_weight,
+                         load_test=load_test
                          )
 
 
@@ -124,9 +126,9 @@ def main(cfg: DictConfig) -> None:
         reducer = cfg.trainer.reducer,
         bm25_reweight = cfg.beir_evaluator.bm25_reweight,
         corpus_name = cfg.beir_evaluator.corpus_name,
-        bm25_weight = cfg.beir_evaluator.bm25_weight
+        bm25_weight = cfg.beir_evaluator.bm25_weight,
+        load_test = cfg.trainer.load_test
         )
-    
     
 if __name__ == "__main__":
     gc.collect()
